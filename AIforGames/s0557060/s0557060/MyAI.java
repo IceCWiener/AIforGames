@@ -6,6 +6,7 @@ import lenz.htw.ai4g.track.Track;
 import lenz.htw.ai4g.*;
 import java.lang.Math;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.vector.Vector2f;
 
 import java.awt.Polygon;
 
@@ -23,6 +24,22 @@ public class MyAI extends AI {
 	int obsY;
 	int autoX;
 	int autoY;
+	float zielgeschwindigkeit;
+	float startgeschwindigkeit;
+	float drehBeschleunigung;
+	float wunschDrehGeschw;
+	float maxTurnSpeed;
+	float abbremsWinkel = (float)(Math.PI/2.);	//Winkel ab dem das Auto bremsen soll, um nicht zu übersteuern.
+	float turnSpeed;
+	float maxAcceleration = info.getMaxAcceleration();
+	float wunschZeit = 2;	//Genaue Funktion noch unklar
+	Vector2f getVelCoord;
+	float getVel;
+	float maxVel;
+	float abbremsRad = 24;
+	float rotZielWinkel;	//Winkel zwischen der Orientiereung des Autos und dem Ziel
+	float zielWinkel;
+	float toleranz = 0.2f;
 	
 	public MyAI(Info info) {
 		super(info);
@@ -47,22 +64,33 @@ public class MyAI extends AI {
 		y = info.getY();
 		info.getAngularVelocity();
 		ori = info.getOrientation();	//-3.14 bis 3.14
-		info.getVelocity();
+		getVelCoord = info.getVelocity();
+		getVel = (float) Math.sqrt(Math.pow(getVelCoord.x, 2) + Math.pow(getVelCoord.y, 2));	//Länge des Velocity-Vektors (Geschwindigkeit)
+		System.out.println("Velocity: " + getVel);
 		info.getCurrentCheckpoint();
 		track = info.getTrack();
-		obsX = obstacles[0].xpoints[0];
-		obsY = obstacles[0].ypoints[0];
+		obsX = 700; //obstacles[0].xpoints[0];
+		obsY = 501; //obstacles[0].ypoints[0];
 		autoX = (int) info.getX();
 		autoY = (int) info.getY();
+		maxVel = info.getMaxVelocity();	//Maximale Geschwindigkeit ist 28.0
+		maxTurnSpeed = info.getMaxAngularVelocity(); //1.5
+		turnSpeed = info.getAngularVelocity();
+		
+		zielWinkel = atan2Vector(x, y, obsX, obsY);
+		rotZielWinkel = zielWinkel - ori;
 		
 		//Consoleprints der Werte
 		//System.out.println("x: " + x + ", y: " + y);
 		System.out.println("Orientation: " + ori);
 		//System.out.println("Current Checkpoint: " + checkP);
 		//System.out.println("Track: " + track);
-		richtung = lenkung(x, y, obsX, obsY);
+		richtung = lenkung();
 		//System.out.println(harmReihe());
-		return new DriverAction(1, richtung);
+		System.out.println("Beschleunigung: " + drehBeschleunigung);
+		
+		
+		return new DriverAction(beschleunigung(), lenkung());
 	}
 	
 	@Override
@@ -75,36 +103,65 @@ public class MyAI extends AI {
 //		return true;
 //	}
 	
-	private int lenkung(float ax, float ay, float bx, float by) {
+	private float beschleunigung() {		//Translation
+		float ret;
+		float bremsPunktX = 0;
+		float bremsPunktY = 0;
+		float wunschGeschw = 0;
+		
+		if(abstand(x, y, obsX, obsY) <= abbremsRad + 1 && abstand(x, y, obsX, obsY) > abbremsRad - 1) {
+			bremsPunktX = x;
+			bremsPunktY = y;
+		}
+		
+		if(abstand(x, y, obsX, obsY) < abbremsRad) {	//Arrive
+			wunschGeschw = abstand(x, y, obsX, obsY) / abstand(bremsPunktX, bremsPunktY, obsX, obsY) * maxVel / abbremsRad;			
+		} else {
+			if(rotZielWinkel < toleranz && rotZielWinkel > -toleranz) {
+				wunschGeschw = maxVel;	//TODO: Geschwindigkeit im Abhängigkeit auf Richtung
+			} else if(rotZielWinkel < abbremsWinkel && rotZielWinkel > -abbremsWinkel) {
+				wunschDrehGeschw = rotZielWinkel * (maxTurnSpeed / abbremsWinkel);
+				if(wunschDrehGeschw > maxTurnSpeed) {	//Clippingabfrage
+					wunschDrehGeschw = maxTurnSpeed;
+				}
+				wunschGeschw = maxVel * (wunschDrehGeschw / maxTurnSpeed);
+			} else {
+				wunschDrehGeschw = maxTurnSpeed;
+				wunschGeschw = maxVel * (wunschDrehGeschw / maxTurnSpeed);
+			}
+		}
+		ret = (wunschGeschw - getVel) / wunschZeit;
+		return ret;
+	}
+	
+	private int lenkung() {	//Rotation
 		int richtung = 0;
-		//Skalarprodukt
-//		double skala = ax*bx + ay*by;
-//		//Satz des Pythagoras
-//		//float a2 = ax - bx;
-//		//float b2 = ay - by;
+		
+//		float zielWinkel = atan2Vector(ax, ay, bx,by);	//Winkel des Vektors vom Auto zum Ziel (Ursprung ist Auto)
+//		System.out.println("zielWinkel: " + zielWinkel); 
 //		
-//		double distA = Math.sqrt(Math.pow(ax, 2) + Math.pow(ay, 2));
-//		double distB = Math.sqrt(Math.pow(bx, 2) + Math.pow(by, 2));
-//		double degWink = Math.acos(skala/(distA*distB));
-//		double piWink = Math.toRadians(degWink);
-		float deltaX = ax - bx;		
-		float deltaY = ay - by;
-		float angle = (float) Math.atan2(deltaY,  deltaX);
-		float wink = (float) Math.toRadians(angle);
-//		System.out.println("Skala: " + skala);
-//		System.out.println("Wink: " + wink);
-		//System.out.println("deltaX: " + deltaX);
-		//System.out.println("deltaY: " + deltaY);
-		//System.out.println("Winkel zwischen den Punkten: " + angle);
-		float punkWi = urschpWink(obsX, obsY);
-		float autoWi = urschpWink(autoX, autoY);
+//		float rotZielWinkel = zielWinkel - ori;	//Winkel zwischen der Orientiereung des Autos und dem Ziel
+//		System.out.println("rotZielWinkel: " + rotZielWinkel);
+//		
+//		if(rotZielWinkel < abbremsWinkel) {
+//			wunschDrehGeschw = Math.abs(rotZielWinkel * maxTurnSpeed / abbremsWinkel);
+//		} else {
+//			wunschDrehGeschw = maxTurnSpeed;
+//		}
+//		System.out.println("Wunschdreh: " + wunschDrehGeschw);
+//		
+//		drehBeschleunigung = idealBeschleunigung(turnSpeed, wunschDrehGeschw, wunschZeit); //Zwischen 0 und 1.5 
+////		
+//		if(drehBeschleunigung > maxAcceleration) {	//Clippingabfrage
+//			drehBeschleunigung = maxAcceleration;
+//		} //TODO: Min Clipping (?)
+//		
 		
 		
-
-		if (ori > 0.785 + 0.2) { //0.785pi = ca 45°
+		if (ori > rotZielWinkel) { 
 			richtung = -1;
 			return richtung;
-		} else if(ori < 0.785 - 0.2){
+		} else if(ori < rotZielWinkel){
 			richtung = 1;
 			return richtung;
 		}else {
@@ -113,43 +170,88 @@ public class MyAI extends AI {
 		}
 	}
 	
-	public int harmReihe () {
-		int richtung;
-		i = i+1;
-		if(i%3 == 0) {
-			return -1;
-		}else {
-			return 1;
-		}
-			//i = i+1;
-			//richtung = (int) Math.pow(-1, i);
-			//System.out.println(richtung);
-			//return richtung;
-	}
+//	public int harmReihe () {
+//		int richtung;
+//		i = i+1;
+//		if(i%3 == 0) {
+//			return -1;
+//		}else {
+//			return 1;
+//		}
+//			//i = i+1;
+//			//richtung = (int) Math.pow(-1, i);
+//			//System.out.println(richtung);
+//			//return richtung;
+//	}
 	
-	public float urschpWink(int x, int y) {
-		//float wink;
-		float piWink;
-		float m;
-		m = y / x;
-		piWink = (float) Math.atan(m);
-		return piWink;		
-	}
+//	public float urschpWink(int x, int y) {
+//		//float wink;
+//		float piWink;
+//		float m;
+//		m = y / x;
+//		piWink = (float) Math.atan(m);
+//		return piWink;		
+//	}
 	
 	public void doDebugStuff() {
-		int obsX = obstacles[0].xpoints[0];
-		int obsY = obstacles[0].ypoints[0];
-		
 		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(255, 0, 0);
 		GL11.glVertex2f(info.getX(), info.getY());
 		GL11.glVertex2d(info.getX() + Math.cos(info.getOrientation()) * 15, info.getY() + Math.sin(info.getOrientation()) * 15);
 		GL11.glEnd();
-		GL11.glBegin(GL11.GL_LINES);
 		
+		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(0, 255, 0);
 		GL11.glVertex2f(info.getX(), info.getY());
 		GL11.glVertex2f(obsX, obsY);
 		//GL11.glVertex2f(0, 0);
 		GL11.glEnd();
+		
+		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(0, 0, 255);
+		GL11.glVertex2f(x,  y);
+		GL11.glVertex2f(x + getVelCoord.x, y + getVelCoord.y);
+		GL11.glEnd();
+	}
+	
+	public float atan2Vector(double ax, double ay, double bx, double by) {
+		float zielCoordY;
+		float zielCoordlX;
+		float steigungsWinkel;
+		float steigungM;
+		
+//		if(ax > bx) {
+//			zielCoordY = (float)(ay-by); 
+//			zielCoordlX = (float)(ax-bx);
+//		} else {
+			zielCoordY = (float)(by-ay); 
+			zielCoordlX = (float)(bx-ax);
+		//}
+		
+		//steigungM = zielCoordY / zielCoordlX;
+		steigungsWinkel = (float) Math.atan2(zielCoordY, zielCoordlX);
+		
+		return steigungsWinkel;
+	}
+	
+	public float idealBeschleunigung(float start, float ziel, float wunschZeit) {
+		float beschleunigung;
+		
+		beschleunigung = (ziel - start) / wunschZeit;
+				
+		return beschleunigung;
+	}
+	
+	public float abstand (float startX, float startY, float zielX, float zielY) {
+		float ret;
+		float ergX;
+		float ergY;
+		
+		ergX = zielX - startX;
+		ergY = zielY - startY;
+		
+		ret =(float) Math.sqrt(Math.pow(ergX, 2)+ Math.pow(ergY, 2));
+		return ret;
 	}
 
 }
