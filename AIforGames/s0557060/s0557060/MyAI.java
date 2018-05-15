@@ -29,10 +29,10 @@ public class MyAI extends AI {
 	float drehBeschleunigung;
 	float wunschDrehGeschw;
 	float maxTurnSpeed;
-	float abbremsWinkel = (float)(Math.PI/2);	//Winkel ab dem das Auto bremsen soll, um nicht zu übersteuern.
+	float abbremsWinkel = (float)(Math.PI);	//Winkel ab dem das Auto bremsen soll, um nicht zu übersteuern.
 	float turnSpeed;
 	float maxAcceleration = info.getMaxAcceleration();
-	float wunschZeit = 2;	//Genaue Funktion noch unklar
+	float wunschZeit = 1;	//Genaue Funktion noch unklar
 	Vector2f getVelCoord;
 	float getVel;
 	float maxVel;
@@ -77,7 +77,7 @@ public class MyAI extends AI {
 		autoY = (int) info.getY();
 		maxVel = info.getMaxVelocity();	//Maximale Geschwindigkeit ist 28.0
 		maxTurnSpeed = info.getMaxAngularVelocity(); //1.5
-		turnSpeed = info.getAngularVelocity();
+		turnSpeed = Math.abs(info.getAngularVelocity());
 		//System.out.println("maxAnglAcce: " + info.getMaxAngularAcceleration());
 		oriWink(); //Errechnet den Winkel zwischen den Orientierungen
 		
@@ -86,14 +86,14 @@ public class MyAI extends AI {
 		System.out.println("Orientation: " + ori);
 		//System.out.println("Current Checkpoint: " + checkP);
 		//System.out.println("Track: " + track);
-		richtung = lenkung();
+		richtung = lenkung(abbremsWinkel);
 		//System.out.println(harmReihe());
 		//System.out.println("Beschleunigung: " + drehBeschleunigung);
 		System.out.println("Winkel zw Orientierungen(Betrag): " + rotZielAbsWinkel);
 		//System.out.println("Winkel zw Orientierungen: " + rotZielWinkel);
 		
 		
-		return new DriverAction(beschleunigung(), lenkung());
+		return new DriverAction(beschleunigung(), lenkung(abbremsWinkel));
 	}
 
 	private void oriWink() {
@@ -133,12 +133,12 @@ public class MyAI extends AI {
 		} else {
 			if(rotZielAbsWinkel < toleranz) {
 				wunschGeschw = maxVel;	//TODO: Geschwindigkeit in Abhängigkeit auf Richtung
-			} else if(rotZielAbsWinkel < abbremsWinkel) {	//Align
-				wunschDrehGeschw = rotZielAbsWinkel * (maxTurnSpeed / abbremsWinkel);
-				if(wunschDrehGeschw > maxTurnSpeed) {	//Clippingabfrage
-					wunschDrehGeschw = maxTurnSpeed;
-				}
-				wunschGeschw = maxVel * (wunschDrehGeschw / maxTurnSpeed);
+//			} else if(rotZielAbsWinkel < abbremsWinkel) {	//Align
+//				wunschDrehGeschw = rotZielAbsWinkel * (maxTurnSpeed / abbremsWinkel);
+//				if(wunschDrehGeschw > maxTurnSpeed) {	//Clippingabfrage
+//					wunschDrehGeschw = maxTurnSpeed;
+//				}
+//				wunschGeschw = maxVel * (wunschDrehGeschw / maxTurnSpeed);
 			} else {
 //				wunschDrehGeschw = maxTurnSpeed;
 //				wunschGeschw = maxVel * (wunschDrehGeschw / maxTurnSpeed);
@@ -150,9 +150,25 @@ public class MyAI extends AI {
 		return ret;
 	}
 	
-	private float lenkung() {	//Rotation
+	private float lenkung(float abbremsWinkel) {	//Rotation
 		float richtung;
-	
+		
+		if(rotZielWinkel < 0) {
+			abbremsWinkel = 0 - abbremsWinkel;
+		} else {
+			abbremsWinkel = this.abbremsWinkel;
+		}
+		if(rotZielWinkel < abbremsWinkel && abbremsWinkel > 0) {
+			richtung = rotZielWinkel * (maxTurnSpeed / abbremsWinkel);
+		} else if(rotZielWinkel > abbremsWinkel && abbremsWinkel < 0){
+			richtung = rotZielWinkel * (maxTurnSpeed / abbremsWinkel);
+		} else if(rotZielWinkel < 0){
+			richtung = 1;
+		} else if(rotZielWinkel > 0) {
+			richtung = -1;
+		} else {
+			richtung = 0;
+		}
 		
 //		float zielWinkel = atan2Vector(ax, ay, bx,by);	//Winkel des Vektors vom Auto zum Ziel (Ursprung ist Auto)
 //		System.out.println("zielWinkel: " + zielWinkel); 
@@ -173,15 +189,15 @@ public class MyAI extends AI {
 //			drehBeschleunigung = maxAcceleration;
 //		} //TODO: Min Clipping (?)
 //		
-		richtung = (float) (rotZielWinkel/Math.PI);
-		if(rotZielWinkel <= Math.PI/4) {
-			richtung = -1;
-		}else if(rotZielWinkel >= -Math.PI/4) {
-			richtung = 1;
-		}
-		if(rotZielWinkel <= Math.PI/4 && turnSpeed < 0.5 && rotZielWinkel >= -Math.PI/4) {
-			richtung = 0;
-		}
+//		richtung = (float) (rotZielWinkel/Math.PI);
+//		if(rotZielWinkel <= Math.PI/4) {
+//			richtung = -1;
+//		}else if(rotZielWinkel >= -Math.PI/4) {
+//			richtung = 1;
+//		}
+//		if(rotZielWinkel <= Math.PI/4 && turnSpeed < 0.5 && rotZielWinkel >= -Math.PI/4) {
+//			richtung = 0;
+//		}
 		return richtung;
 //		if (ori > rotZielWinkel) { 
 //			richtung = -1;
