@@ -1,20 +1,16 @@
 package s0557060;
 
+import java.awt.Polygon;
+
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.vector.Vector2f;
+
 import lenz.htw.ai4g.ai.AI;
 import lenz.htw.ai4g.ai.DriverAction;
 import lenz.htw.ai4g.ai.Info;
 import lenz.htw.ai4g.track.Track;
-import lenz.htw.ai4g.*;
-import java.lang.Math;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.util.Point;
-import org.lwjgl.util.vector.Vector2f;
 
-import java.awt.Polygon;
-import java.awt.geom.Line2D;
-
-public class MyAI extends AI {
-
+public class MyAiNew extends AI{
 	float x;
 	float y;
 	float nX;
@@ -59,7 +55,7 @@ public class MyAI extends AI {
 	float lenkSpeed;
 	float maxAngularAccelaration = info.getMaxAngularAcceleration();;
 
-	public MyAI(Info info) {
+	public MyAiNew(Info info) {
 		super(info);
 		// nlistForDevelopment(); //Nur zum testen
 		enlistForTournament(557060, 556736); // Beide Matrikelnummern übergeben
@@ -73,7 +69,7 @@ public class MyAI extends AI {
 
 	@Override
 	public String getName() {
-		return "Konstantim";
+		return "KonstantimNew";
 	}
 
 	@Override
@@ -106,7 +102,7 @@ public class MyAI extends AI {
 		// System.out.println("maxAnglAcce: " +
 		// info.getMaxAngularAcceleration());
 		oriWink(); // Errechnet den Winkel zwischen den Orientierungen
-		//driveCalc();
+		driveCalc();
 		
 		// Consoleprints der Werte
 		// System.out.println("x: " + x + ", y: " + y);
@@ -122,10 +118,10 @@ public class MyAI extends AI {
 		//System.out.println("Winkel zw Orientierungen: " + rotZielWinkel);
 		//System.out.println("Richtung: " + lenkung(abbremsWinkel));
 		//System.out.println("Toleranz: " + toleranz);
-		System.out.println("GeschwNEW: " + beschleunigung());
-		System.out.println("DrehbeschleunigungNEW: " + lenkung());
+		System.out.println("Geschw: " + beschlGes);
+		System.out.println("Drehbeschleunigung: " + drehBeschlGes);
 		
-		return new DriverAction(beschleunigung(), lenkung());
+		return new DriverAction(beschlGes, drehBeschlGes);
 	}
 
 	private void oriWink() {
@@ -145,54 +141,54 @@ public class MyAI extends AI {
 	}
 	
 	
-//	public void driveCalc(){
-//		
-//	
-//	float zielWeg = abstand(x,y,obsX,obsY);
-//		
-//		if(rotZielAbsWinkel < toleranz){
-//			wunschDrehGeschw = 0;
-//			wunschGeschw = maxVel;
-//		}else if(zielWeg < stopRad){
-//			wunschGeschw = 0;
-//		}
-//		
-//		if(rotZielAbsWinkel < bremsWinkel && zielWeg > bremsRadius){
-//			wunschDrehGeschw = rotZielWinkel * maxTurnSpeed / bremsWinkel;
-//			wunschGeschw = maxVel;
-//		} else if(rotZielAbsWinkel > bremsWinkel){
-//			wunschGeschw = 1;
-//			if(rotZielWinkel >= 0){
-//				wunschDrehGeschw = maxTurnSpeed;
-//			}else{
-//				wunschDrehGeschw = -maxTurnSpeed;
-//			}
-//		}else if(zielWeg < bremsRadius){
-//			wunschGeschw = zielWeg * maxVel / bremsRadius;
-//		}
-//		
-//		wunschDrehGeschw = wunschDrehGeschw / maxTurnSpeed;
-//		
-//		boolean hit = false;
-//		
-//		if(hit){
-//			wunschGeschw = -info.getMaxBackwardVelocity();
-//			wunschDrehGeschw = -maxTurnSpeed;
-//		}
-//		
-//		beschlGes = (wunschGeschw - getVelCoord.length()) / 1;
-//		
-//		if(beschlGes > maxAcceleration){
-//			beschlGes = maxAcceleration;
-//		}
-//		
-//		drehBeschlGes = (wunschDrehGeschw - turnSpeed) / 1;
-//		
-//		if(drehBeschlGes > maxAngularAccelaration){
-//			drehBeschlGes = maxAngularAccelaration;
-//		}
+	public void driveCalc(){
 		
-//	}
+	
+	float zielWeg = abstand(x,y,obsX,obsY);
+		
+		if(rotZielAbsWinkel < toleranz){
+			wunschDrehGeschw = 0;
+			wunschGeschw = maxVel;
+		}else if(zielWeg < stopRad){
+			wunschGeschw = 0;
+		}
+		
+		if(rotZielAbsWinkel < bremsWinkel && zielWeg > bremsRadius){
+			wunschDrehGeschw = rotZielWinkel * maxTurnSpeed / bremsWinkel;
+			wunschGeschw = maxVel;
+		} else if(rotZielAbsWinkel > bremsWinkel){
+			wunschGeschw = 1;
+			if(rotZielWinkel >= 0){
+				wunschDrehGeschw = maxTurnSpeed;
+			}else{
+				wunschDrehGeschw = -maxTurnSpeed;
+			}
+		}else if(zielWeg < bremsRadius){
+			wunschGeschw = zielWeg * maxVel / bremsRadius;
+		}
+		
+		wunschDrehGeschw = wunschDrehGeschw / maxTurnSpeed;
+		
+		boolean hit = false;
+		
+		if(hit){
+			wunschGeschw = -info.getMaxBackwardVelocity();
+			wunschDrehGeschw = -maxTurnSpeed;
+		}
+		
+		beschlGes = (wunschGeschw - getVelCoord.length()) / 1;
+		
+		if(beschlGes > maxAcceleration){
+			beschlGes = maxAcceleration;
+		}
+		
+		drehBeschlGes = (wunschDrehGeschw - turnSpeed) / 1;
+		
+		if(drehBeschlGes > maxAngularAccelaration){
+			drehBeschlGes = maxAngularAccelaration;
+		}
+		
+	}
 	
 //	public boolean collision(int obsNum, Line2D sens){
 //		Point p = new Point((int) info.getX() + Math.cos(info.getOrientation()) * 15,(int) info.getX() + Math.cos(info.getOrientation()) * 15);
@@ -202,60 +198,49 @@ public class MyAI extends AI {
 	// return true;
 	// }
 
-	private float beschleunigung() { // Translation
-		float ret; 
-		float bremsPunktX = 0;
-		float bremsPunktY = 0;
-		float wunschGeschw = 0;
-		float zielWeg = abstand(x,y,obsX,obsY);
+//	private float beschleunigung() { // Translation
+//		float ret; 
+//		float bremsPunktX = 0;
+//		float bremsPunktY = 0;
+//		float wunschGeschw = 0;
+//
+//		if (abstand(x, y, obsX, obsY) <= abbremsRad + 1 && abstand(x, y, obsX, obsY) > abbremsRad - 1) {
+//			bremsPunktX = x;
+//			bremsPunktY = y;
+//		}
+//
+//		if (abstand(x, y, obsX, obsY) < abbremsRad) { // Arrive
+//			wunschGeschw = (abstand(x, y, obsX, obsY) - abstand(bremsPunktX, bremsPunktY, obsX, obsY)) * maxVel
+//					/ abbremsRad;
+//		}
+//		if (rotZielAbsWinkel < toleranz) {
+//			wunschGeschw = maxVel; // TODO: Geschwindigkeit in Abhängigkeit
+//									// auf Richtung
+//			// } else if (rotZielAbsWinkel < abbremsWinkel) { // Align
+//			// wunschDrehGeschw = rotZielAbsWinkel * (maxTurnSpeed /
+//			// abbremsWinkel);
+//			// if (wunschDrehGeschw > maxTurnSpeed) { // Clippingabfrage
+//			// wunschDrehGeschw = maxTurnSpeed;
+//			// }				// wunschGeschw = maxVel * (wunschDrehGeschw / maxTurnSpeed);
+//			 } else if (rotZielAbsWinkel > abbremsWinkel){
+//			 //wunschDrehGeschw = maxTurnSpeed;
+//			 //wunschGeschw = maxVel * (wunschDrehGeschw / maxTurnSpeed);
+//			 //wunschGeschw = -(maxVel / maxTurnSpeed) * turnSpeed + maxVel;
+//				 wunschGeschw = 5;
+//			 }
+//	
+//
+//
+//		ret=(wunschGeschw-getVel)/wunschZeit;
+//		if (ret > maxAcceleration){
+//			ret = maxAcceleration;
+//		}
+//		//System.out.println("WunschgeschW: "+wunschGeschw);
+//		return ret;
+//	}
 
-		if(rotZielAbsWinkel < toleranz){
-			wunschGeschw = maxVel;
-		}else if(zielWeg < stopRad){
-			wunschGeschw = 0;
-		}
-		
-		if(rotZielAbsWinkel < bremsWinkel && zielWeg > bremsRadius){
-			wunschGeschw = maxVel;
-		} else if(rotZielAbsWinkel > bremsWinkel){
-			wunschGeschw = 1;
-		}else if(zielWeg < bremsRadius){
-			wunschGeschw = zielWeg * maxVel / bremsRadius;
-		}
-		
-		ret = (wunschGeschw - getVelCoord.length()) / 1;
-		
-		if(ret > maxAcceleration){
-			ret = maxAcceleration;
-		}
-		
-		return ret;
-	}
-
-	private float lenkung() { // Rotation
-		float richtung;
-		float wunschDrehGeschw = 0;
-		float zielWeg = abstand(x,y,obsX,obsY);
-		
-		if(rotZielAbsWinkel < toleranz){
-			wunschDrehGeschw = 0;
-		}
-		
-		if(rotZielAbsWinkel < bremsWinkel && zielWeg > bremsRadius){
-			wunschDrehGeschw = rotZielWinkel * maxTurnSpeed / bremsWinkel;
-		} else if(rotZielWinkel >= 0){
-				wunschDrehGeschw = maxTurnSpeed;
-		}else{
-				wunschDrehGeschw = -maxTurnSpeed;
-		}
-		
-		wunschDrehGeschw = wunschDrehGeschw / maxTurnSpeed;
-		
-		richtung = (wunschDrehGeschw - turnSpeed) / 1;
-		
-		if(richtung > maxAngularAccelaration){
-			richtung = maxAngularAccelaration;
-		}
+//	private float lenkung(float abbremsWinkel) { // Rotation
+//		float richtung = 0;
 
 		// if(rotZielWinkel < 0) {
 		// abbremsWinkel = 0 - abbremsWinkel;
@@ -296,8 +281,6 @@ public class MyAI extends AI {
 //		} else if(richtung < -1){
 //			richtung = -1;
 //		}
-		
-		
 
 //		if (rotZielWinkel > 0 + toleranz) {
 //			return richtung = richtung;
@@ -358,7 +341,7 @@ public class MyAI extends AI {
 		// >= -Math.PI / 4) {
 		// richtung = 0;
 		// }
-		return richtung;
+		//return richtung;
 		// if (ori > rotZielWinkel) {
 		// richtung = -1;
 		// return richtung;
@@ -369,7 +352,7 @@ public class MyAI extends AI {
 		// richtung = 0;
 		// return richtung;
 		// }
-	}
+	//}
 
 	// public int harmReihe () {
 	// int richtung;
@@ -488,5 +471,6 @@ public class MyAI extends AI {
 			return 0.1f;
 		}
 	}
+
 
 }
