@@ -79,8 +79,10 @@ public class MyAI extends AI {
 	int sensLaenge = 16;
 	int sensLaengeSeite = 8;
 	boolean hit = false;
+	boolean wp1 = true;
 	boolean dualWP = false;	//Zwei Wegpunkte
 	int zielQ = 1;
+	Point pWegPunkt = new Point();
 
 	public MyAI(Info info) {
 		super(info);
@@ -157,10 +159,9 @@ public class MyAI extends AI {
 		}
 		//Wegpunkte
 		if(hit == true) {
-			Point pWegPunkt = new Point();
 			Point pZiel = new Point(info.getCurrentCheckpoint().x, info.getCurrentCheckpoint().y);
 			int autoQ = quadTr11(x, y);
-			if(!dualWP) {zielQ = quadTr11(pZiel.getX(), pZiel.getY());}
+			zielQ = quadTr11(pZiel.getX(), pZiel.getY());
 			Point p1 = new Point(375, 625);
 			Point p2 = new Point(625, 625);
 			Point p3 = new Point(375, 375);
@@ -169,102 +170,119 @@ public class MyAI extends AI {
 			
 			switch(autoQ) {
 			case 1: 
-				pWegPunkt = p1;
+				if(wp1) {
+					pWegPunkt = p1;
+					wp1 = false;
+					break;
+				}
 				switch(zielQ) {
-				case 1: 
-					dualWP = false;
+				case 1:
+					wp1 = true;
 					break;
 				case 2:					
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p2;
-						break;
+						wp1 = true;
 					}
+					break;
 				case 3:
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p3;
-						break;
+						wp1 = true;
 					}
+					break;
 				case 4:
 					if(zielWeg < stopRadWP) {
-						pWegPunkt = p2;
-						zielQ = 2;
 						dualWP = true;
-						break;
+						pWegPunkt = p2;
 					}
+					break;
 				}
-				break;
 			case 2: 
-				pWegPunkt = p2;
+				if(wp1) {
+					pWegPunkt = p2;
+					wp1 = false;
+					break;
+				}
 				switch(zielQ) {
 				case 1: 
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p1;
-						break;
+						wp1 = true;
 					}
-				case 2:			
-					dualWP = false;
+					break;
+				case 2:	
+					wp1 = true;		
 					break;
 				case 3:
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p1;
-						zielQ = 1;
 						dualWP = true;
-						break;
 					}
+					break;
 				case 4:
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p4;
-						break;
+						wp1 = true;
 					}
+					break;
 				}
-				break;
 			case 3: 
-				pWegPunkt = p3;
+				if(wp1) {
+					pWegPunkt = p3;
+					wp1 = false;
+					break;
+				}
 				switch(zielQ) {
 				case 1: 
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p1;
-						break;
+						wp1 = true;
 					}
+					break;
 				case 2:					
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p1;
-						zielQ = 1;
 						dualWP = true;
-						break;
 					}
+					break;
 				case 3:
-					dualWP = false;
+					wp1 = true;
 					break;
 				case 4:
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p4;
-						break;
+						wp1 = true;
 					}
+					break;
 				}
-				break;
 			case 4: 
-				pWegPunkt = p4;
+				if(wp1) {
+					pWegPunkt = p4;
+					wp1 = false;
+					break;
+				}
 				switch(zielQ) {
 				case 1: 
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p2;
-						zielQ = 2;
 						dualWP = true;
-						break;
 					}
+					break;
 				case 2:					
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p2;
-						break;
+						wp1 = true;
 					}
+					break;
 				case 3:
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p3;
-						break;
+						wp1 = true;
 					}
+					break;
 				case 4:
-					dualWP = false;
+					wp1 = true;
 					break;
 				}
 			}
@@ -278,6 +296,7 @@ public class MyAI extends AI {
 				obsY = pZiel.getY();
 				hit = false;
 			}
+			System.out.println("dualWp: " + dualWP);
 		}
 		
 		autoX = (int) info.getX();
