@@ -173,22 +173,21 @@ public class MyAI extends AI {
 				if(wp1) {
 					pWegPunkt = p1;
 					wp1 = false;
-					break;
 				}
 				switch(zielQ) {
 				case 1:
-					wp1 = true;
+//					wp1 = true;
 					break;
 				case 2:					
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p2;
-						wp1 = true;
+//						wp1 = true;
 					}
 					break;
 				case 3:
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p3;
-						wp1 = true;
+//						wp1 = true;
 					}
 					break;
 				case 4:
@@ -202,17 +201,16 @@ public class MyAI extends AI {
 				if(wp1) {
 					pWegPunkt = p2;
 					wp1 = false;
-					break;
 				}
 				switch(zielQ) {
 				case 1: 
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p1;
-						wp1 = true;
+//						wp1 = true;
 					}
 					break;
 				case 2:	
-					wp1 = true;		
+//					wp1 = true;		
 					break;
 				case 3:
 					if(zielWeg < stopRadWP) {
@@ -223,7 +221,7 @@ public class MyAI extends AI {
 				case 4:
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p4;
-						wp1 = true;
+//						wp1 = true;
 					}
 					break;
 				}
@@ -231,13 +229,12 @@ public class MyAI extends AI {
 				if(wp1) {
 					pWegPunkt = p3;
 					wp1 = false;
-					break;
 				}
 				switch(zielQ) {
 				case 1: 
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p1;
-						wp1 = true;
+						//wp1 = true;
 					}
 					break;
 				case 2:					
@@ -247,12 +244,12 @@ public class MyAI extends AI {
 					}
 					break;
 				case 3:
-					wp1 = true;
+//					wp1 = true;
 					break;
 				case 4:
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p4;
-						wp1 = true;
+//						wp1 = true;
 					}
 					break;
 				}
@@ -260,7 +257,6 @@ public class MyAI extends AI {
 				if(wp1) {
 					pWegPunkt = p4;
 					wp1 = false;
-					break;
 				}
 				switch(zielQ) {
 				case 1: 
@@ -272,17 +268,17 @@ public class MyAI extends AI {
 				case 2:					
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p2;
-						wp1 = true;
+//						wp1 = true;
 					}
 					break;
 				case 3:
 					if(zielWeg < stopRadWP) {
 						pWegPunkt = p3;
-						wp1 = true;
+//						wp1 = true;
 					}
 					break;
 				case 4:
-					wp1 = true;
+//					wp1 = true;
 					break;
 				}
 			}
@@ -291,7 +287,7 @@ public class MyAI extends AI {
 			zielWeg = abstand(x, y, obsX, obsY);
 			//System.out.println("Zielweg: " + zielWeg);
 			
-			if(zielWeg < stopRadWP && !dualWP) {
+			if(zielWeg < stopRadWP && !dualWP && wp1) {
 				obsX = pZiel.getX();
 				obsY = pZiel.getY();
 				hit = false;
