@@ -54,6 +54,7 @@ public class MyAiNew extends AI {
 	float abbremsRad = 10;
 	float stopRad = 5;
 	float stopRadWP = 10;
+	float stopRadWP2 = 2;
 	float rotZielAbsWinkel; // Winkel zwischen der Orientiereung des Autos und
 							// dem Ziel
 	float zielWinkel;
@@ -83,6 +84,8 @@ public class MyAiNew extends AI {
 	int zielQ = 1;
 	Point pWegPunkt = new Point();
 	Point pAnfahrt = new Point();
+	float width;
+	float height;
 
 	public MyAiNew(Info info) {
 		super(info);
@@ -98,12 +101,14 @@ public class MyAiNew extends AI {
 
 	@Override
 	public String getName() {
-		return "Konstantim";
+		return "KonstantimNEW";
 	}
 
 	@Override
 	public DriverAction update(boolean wasResetAfterCollision) {
 
+		
+		if(wasResetAfterCollision) hit = false;
 		x = info.getX(); // Startpunkt = (500, 500)
 		y = info.getY();
 		nX = (float) (Math.cos(ori));
@@ -118,8 +123,11 @@ public class MyAiNew extends AI {
 		// System.out.println("Checkpoint Charlie: " +
 		// info.getCurrentCheckpoint());
 		track = info.getTrack();
-		System.out.println("obsX: " + obsX + " || obsY: " + obsY + " || "+ hit);
-		if (hit == false){
+		width = track.getWidth();
+		height = track.getHeight();
+//		System.out.println("Breite" + width);	//Tr12: 1000	//Tr11: 1000
+//		System.out.println("Höhe" + height);	//Tr12: 800		//Tr11: 1000
+		if(hit == false) {
 			obsX = (float) info.getCurrentCheckpoint().getX();
 			obsY = (float) info.getCurrentCheckpoint().getY();
 		}
@@ -160,6 +168,44 @@ public class MyAiNew extends AI {
 				gruenM = 255;
 			}		
 		}
+		
+		if (height == 1000) {
+			wegpunkteTr11();
+		} else if(height == 800) {
+			wegpunkteTr12();
+		}
+		
+		maxVel = info.getMaxVelocity(); // Maximale Geschwindigkeit ist 28.0
+		maxTurnSpeed = info.getMaxAngularVelocity(); // 1.5
+		turnSpeed = info.getAngularVelocity();
+		// System.out.println("maxAnglAcce: " +
+		// info.getMaxAngularAcceleration());
+		oriWink(); // Errechnet den Winkel zwischen den Orientierungen
+		collisionDetection();
+		//driveCalc();
+		
+		// Consoleprints der Werte
+		// System.out.println("x: " + x + ", y: " + y);
+		// System.out.println("Orientation: " + ori);
+		// System.out.println("Current Checkpoint: " + checkP);
+		// System.out.println("Track: " + track);
+		//richtung = lenkung(abbremsWinkel);
+		// toleranz = emerTol(getVel);
+		// System.out.println(harmReihe());
+		// System.out.println("Beschleunigung: " + drehBeschleunigung);
+		// System.out.println("Winkel zw Orientierungen(Betrag): " +
+		// rotZielAbsWinkel);
+		//System.out.println("Winkel zw Orientierungen: " + rotZielWinkel);
+		//System.out.println("Richtung: " + lenkung(abbremsWinkel));
+		//System.out.println("Toleranz: " + toleranz);
+//		System.out.println("Beschleunigung: " + beschleunigung());
+//		System.out.println("Drehbeschleunigung: " + lenkung());
+//		System.out.println("TurnSpeed: " + info.getAngularVelocity());
+		
+		return new DriverAction(beschleunigung(), lenkung());
+	}
+
+	private void wegpunkteTr11() {
 		//Wegpunkte
 		if(hit == true) {
 			Point pZiel = new Point(info.getCurrentCheckpoint().x, info.getCurrentCheckpoint().y);
@@ -296,7 +342,8 @@ public class MyAiNew extends AI {
 					wp2 = true;
 					wp3 = false;
 					break;
-				}}
+				}
+			}
 			//System.out.println("AutoQ : " + autoQ);
 			//System.out.println("zielQ :" + zielQ);
 			System.out.println("WP1: " + wp1 + "|| WP2 : " + wp2 + "|| WP3: " + wp3);
@@ -329,39 +376,322 @@ public class MyAiNew extends AI {
 			}
 			//System.out.println("dualWp: " + dualWP);
 		}
-		
-		maxVel = info.getMaxVelocity(); // Maximale Geschwindigkeit ist 28.0
-		maxTurnSpeed = info.getMaxAngularVelocity(); // 1.5
-		turnSpeed = info.getAngularVelocity();
-		// System.out.println("maxAnglAcce: " +
-		// info.getMaxAngularAcceleration());
-		oriWink(); // Errechnet den Winkel zwischen den Orientierungen
-		collisionDetection();
-		//driveCalc();
-		
-		// Consoleprints der Werte
-		// System.out.println("x: " + x + ", y: " + y);
-		// System.out.println("Orientation: " + ori);
-		// System.out.println("Current Checkpoint: " + checkP);
-		// System.out.println("Track: " + track);
-		//richtung = lenkung(abbremsWinkel);
-		// toleranz = emerTol(getVel);
-		// System.out.println(harmReihe());
-		// System.out.println("Beschleunigung: " + drehBeschleunigung);
-		// System.out.println("Winkel zw Orientierungen(Betrag): " +
-		// rotZielAbsWinkel);
-		//System.out.println("Winkel zw Orientierungen: " + rotZielWinkel);
-		//System.out.println("Richtung: " + lenkung(abbremsWinkel));
-		//System.out.println("Toleranz: " + toleranz);
-//		System.out.println("Beschleunigung: " + beschleunigung());
-//		System.out.println("Drehbeschleunigung: " + lenkung());
-//		System.out.println("TurnSpeed: " + info.getAngularVelocity());
-//		System.out.println(hit);
-		
-		return new DriverAction(beschleunigung(), lenkung());
+	}
+
+	private void wegpunkteTr12() {
+		//Wegpunkte
+		if(hit == true) {
+			Point pZiel = new Point(info.getCurrentCheckpoint().x, info.getCurrentCheckpoint().y);
+			int autoQ = quadTr12(x, y);
+			zielQ = quadTr12(pZiel.getX(), pZiel.getY());
+			Point p1 = new Point((int) (1./6.*width), (int) (1./4.*height));
+			Point p2 = new Point((int) (3./6.*width), (int) (1./4.*height));
+			Point p3 = new Point((int) (5./6.*width), (int) (1./4.*height));
+			Point p4 = new Point((int) (1./6.*width), (int) (3./4.*height));
+			Point p5 = new Point((int) (3./6.*width), (int) (3./4.*height));
+			Point p6 = new Point((int) (5./6.*width), (int) (3./4.*height));
+			
+			float zielWeg = abstand(x, y, pWegPunkt.getX(), pWegPunkt.getY());
+			float umWeg = abstand(x, y, pAnfahrt.getX(), pAnfahrt.getY());
+			
+			switch(autoQ) {
+			case 1: 
+				if(wp2) {
+					pAnfahrt = p1;
+					wp2 = false;
+					break;
+				}
+				if(zielQ == 1) {
+					wp2 = true;
+					wp3 = false;
+					break;
+				}else if(zielQ == 2) {					
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p2;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 3) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p3;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 4) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p4;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 5) {
+					if(umWeg < stopRadWP) {
+						wp3 = true;
+						pWegPunkt = p4;
+					}
+					break;
+				}else if(zielQ == 6) {
+					if(umWeg < stopRadWP) {
+						wp3 = true;
+						pWegPunkt = p4;
+					}
+					break;
+				}
+			case 2: 
+				if(wp2) {
+					pAnfahrt = p2;
+					wp2 = false;
+					break;
+				}
+				if(zielQ == 1) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p1;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 2) {	
+					wp2 = true;	
+					wp3 = false;	
+					break;
+				}else if(zielQ == 3) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p3;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 4) {
+					if(umWeg < stopRadWP) {
+						wp3 = true;
+						pWegPunkt = p5;
+					}
+					break;
+				}else if(zielQ == 5) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p5;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 6) {
+					if(umWeg < stopRadWP) {
+						wp3 = true;
+						pWegPunkt = p5;
+					}
+					break;
+				}
+			case 3:
+				if(wp2) {
+					pAnfahrt = p3;
+					wp2 = false;
+					break;
+				}
+				if(zielQ == 1) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p1;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 2) {					
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p2;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 3) {
+					wp2 = true;
+					wp3 = false;
+					break;
+				}else if(zielQ == 4) {
+					if(umWeg < stopRadWP) {
+						wp3 = true;
+						pWegPunkt = p6;
+					}
+					break;
+				}else if(zielQ == 5) {
+					if(umWeg < stopRadWP) {
+						wp3 = true;
+						pWegPunkt = p6;
+					}
+					break;
+				}else if(zielQ == 6) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p6;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}
+			case 4:
+				if(wp2) {
+					pAnfahrt = p4;
+					wp2 = false;
+					break;
+				}
+				if(zielQ == 1) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p1;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 2) {					
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p2;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 3) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p3;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 4) {
+					wp2 = true;
+					wp3 = false;
+					break;
+				}else if(zielQ == 5) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p5;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 6) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p6;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}
+			case 5:
+				if(wp2) {
+					pAnfahrt = p5;
+					wp2 = false;
+					break;
+				}
+				if(zielQ == 1) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p1;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 2) {					
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p2;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 3) {
+					wp2 = true;
+					break;
+				}else if(zielQ == 4) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p4;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 5) {
+					wp2 = true;
+					wp3 = false;
+					break;
+				}else if(zielQ == 6) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p6;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}
+			case 6:
+				if(wp2) {
+					pAnfahrt = p6;
+					wp2 = false;
+					break;
+				}
+				if(zielQ == 1) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p2;
+						wp3 = true;
+					}
+					break;
+				}else if(zielQ == 2) {					
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p2;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 3) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p3;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 4) {
+					pWegPunkt = p4;
+					wp2 = true;
+					wp3 = false;
+					break;
+				}else if(zielQ == 5) {
+					if(umWeg < stopRadWP) {
+						pWegPunkt = p5;
+						wp2 = true;
+						wp3 = false;
+					}
+					break;
+				}else if(zielQ == 6) {
+					wp2 = true;
+					wp3 = false;
+					break;
+				}
+			}
+			System.out.println("AutoQ : " + autoQ);
+			System.out.println("zielQ :" + zielQ);
+			System.out.println("Ziel X: " + obsX + "|| Ziel Y: " + obsY);
+			zielWeg = abstand(x, y, pWegPunkt.getX(), pWegPunkt.getY());
+			umWeg = abstand(x, y, pAnfahrt.getX(), pAnfahrt.getY());
+			//System.out.println("Zielweg: " + zielWeg);
+			
+			if (wp1) {
+				obsX = pAnfahrt.getX();
+				obsY = pAnfahrt.getY();
+				System.out.println("1. Punkt");
+			}
+			
+			if (umWeg < stopRadWP) {
+				obsX = pWegPunkt.getX();
+				obsY = pWegPunkt.getY();
+				wp1 = false;
+				wp3 = false;
+				System.out.println("2. Punkt");
+			}
+			
+			if(zielWeg < stopRadWP && !wp3 && !wp2) {
+				obsX = pZiel.getX();
+				obsY = pZiel.getY();
+				hit = false;
+				wp1 = true;
+				wp2 = true;
+			}
+			//System.out.println("dualWp: " + dualWP);
+		}
 	}
 	
-	private int quadTr11(float x, float y) {	//Unterteilt Track 10 in vier Quadranten und erkennt in welchem der Punkt des Parameters gerade ist.
+	private int quadTr11(float x, float y) {	//Unterteilt Track 11 in vier Quadranten und erkennt in welchem der Punkt des Parameters gerade ist.
 		int quad;
 		if(x < 500 && y > 500) {
 			quad = 1;
@@ -371,6 +701,26 @@ public class MyAiNew extends AI {
 			quad = 3;
 		}else if(x > 500 && y < 500) {
 			quad = 4;
+		} else {
+			quad = 0;
+		}
+		return quad;
+	}
+	
+	private int quadTr12(float x, float y) {	//Unterteilt Track 12 in sechs Quadranten und erkennt in welchem der Punkt des Parameters gerade ist.
+		int quad;
+		if(x < width*1./3. && y > 500) {
+			quad = 1;
+		} else if(x < width*2./3. && x > width*1./3. && y > 500) {
+			quad = 2;
+		} else if(x > width*2./3.&& y > 500) {
+			quad = 3;
+		} else if(x < width*1./3. && y < 500) {
+			quad = 4;
+		} else if(x < width*2./3. && x > width*1./3. && y < 500){
+			quad = 5;
+		} else if(x > width*2./3.&& y < 500) {
+			quad = 6;
 		} else {
 			quad = 0;
 		}
