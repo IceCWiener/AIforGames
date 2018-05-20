@@ -32,8 +32,6 @@ public class MyAI extends AI {
 	
 	float obsX;
 	float obsY;
-	int autoX;
-	int autoY;
 	float zielgeschwindigkeit;
 	float startgeschwindigkeit;
 	float drehBeschleunigung;
@@ -80,7 +78,8 @@ public class MyAI extends AI {
 	int sensLaengeSeite = 8;
 	boolean hit = false;
 	boolean wp1 = true;
-	boolean dualWP = false;	//Zwei Wegpunkte
+	boolean wp2 = true;
+	boolean wp3 = false;	
 	int zielQ = 1;
 	Point pWegPunkt = new Point();
 
@@ -166,137 +165,160 @@ public class MyAI extends AI {
 			Point p2 = new Point(625, 625);
 			Point p3 = new Point(375, 375);
 			Point p4 = new Point(625, 375);
-			float zielWeg = abstand(x, y, obsX, obsY);
+			Point pAnfahrt = new Point();
+			float zielWeg = abstand(x, y, pWegPunkt.getX(), pWegPunkt.getY());
+			float umWeg = abstand(x, y, pAnfahrt.getX(), pAnfahrt.getY());
 			
 			switch(autoQ) {
 			case 1: 
-				if(wp1) {
-					pWegPunkt = p1;
-					wp1 = false;
+				if(wp2) {
+					pAnfahrt = p1;
+					wp2 = false;
+					break;
 				}
-				switch(zielQ) {
-				case 1:
-//					wp1 = true;
+				if(zielQ == 1) {
+					wp2 = true;
+					wp3 = false;
 					break;
-				case 2:					
-					if(zielWeg < stopRadWP) {
+				}else if(zielQ == 2) {					
+					if(umWeg < stopRadWP) {
 						pWegPunkt = p2;
-//						wp1 = true;
+						wp2 = true;
+						wp3 = false;
 					}
 					break;
-				case 3:
-					if(zielWeg < stopRadWP) {
+				}else if(zielQ == 3) {
+					if(umWeg < stopRadWP) {
 						pWegPunkt = p3;
-//						wp1 = true;
+						wp2 = true;
+						wp3 = false;
 					}
 					break;
-				case 4:
-					if(zielWeg < stopRadWP) {
-						dualWP = true;
+				}else if(zielQ == 4) {
+					if(umWeg < stopRadWP) {
+						wp3 = true;
 						pWegPunkt = p2;
 					}
 					break;
 				}
 			case 2: 
-				if(wp1) {
-					pWegPunkt = p2;
-					wp1 = false;
+				if(wp2) {
+					pAnfahrt = p2;
+					wp2 = false;
+					break;
 				}
-				switch(zielQ) {
-				case 1: 
-					if(zielWeg < stopRadWP) {
+				if(zielQ == 1) {
+					if(umWeg < stopRadWP) {
 						pWegPunkt = p1;
-//						wp1 = true;
+						wp2 = true;
+						wp3 = false;
 					}
 					break;
-				case 2:	
-//					wp1 = true;		
+				}else if(zielQ == 2) {	
+					wp2 = true;	
+					wp3 = false;	
 					break;
-				case 3:
-					if(zielWeg < stopRadWP) {
+				}else if(zielQ == 3) {
+					if(umWeg < stopRadWP) {
 						pWegPunkt = p1;
-						dualWP = true;
+						wp3 = true;
 					}
 					break;
-				case 4:
-					if(zielWeg < stopRadWP) {
+				}else if(zielQ == 4) {
+					if(umWeg < stopRadWP) {
 						pWegPunkt = p4;
-//						wp1 = true;
+						wp2 = true;
+						wp3 = false;
 					}
 					break;
 				}
 			case 3: 
-				if(wp1) {
-					pWegPunkt = p3;
-					wp1 = false;
+				if(wp2) {
+					pAnfahrt = p3;
+					wp2 = false;
+					break;
 				}
-				switch(zielQ) {
-				case 1: 
-					if(zielWeg < stopRadWP) {
+				if(zielQ == 1) {
+					if(umWeg < stopRadWP) {
 						pWegPunkt = p1;
-						//wp1 = true;
+						wp2 = true;
+						wp3 = false;
 					}
 					break;
-				case 2:					
-					if(zielWeg < stopRadWP) {
+				}else if(zielQ == 2) {					
+					if(umWeg < stopRadWP) {
 						pWegPunkt = p1;
-						dualWP = true;
+						wp3 = true;
 					}
 					break;
-				case 3:
-//					wp1 = true;
+				}else if(zielQ == 3) {
+					wp2 = true;
 					break;
-				case 4:
-					if(zielWeg < stopRadWP) {
+				}else if(zielQ == 4) {
+					if(umWeg < stopRadWP) {
 						pWegPunkt = p4;
-//						wp1 = true;
+						wp2 = true;
+						wp3 = false;
 					}
 					break;
 				}
 			case 4: 
-				if(wp1) {
-					pWegPunkt = p4;
-					wp1 = false;
+				if(wp2) {
+					pAnfahrt = p4;
+					wp2 = false;
+					break;
 				}
-				switch(zielQ) {
-				case 1: 
-					if(zielWeg < stopRadWP) {
+				if(zielQ == 1) {
+					if(umWeg < stopRadWP) {
 						pWegPunkt = p2;
-						dualWP = true;
+						wp3 = true;
 					}
 					break;
-				case 2:					
-					if(zielWeg < stopRadWP) {
+				}else if(zielQ == 2) {					
+					if(umWeg < stopRadWP) {
 						pWegPunkt = p2;
-//						wp1 = true;
+						wp2 = true;
+						wp3 = false;
 					}
 					break;
-				case 3:
-					if(zielWeg < stopRadWP) {
+				}else if(zielQ == 3) {
+					if(umWeg < stopRadWP) {
 						pWegPunkt = p3;
-//						wp1 = true;
+						wp2 = true;
+						wp3 = false;
 					}
 					break;
-				case 4:
-//					wp1 = true;
+				}else if(zielQ == 4)
+					wp2 = true;
+					wp3 = false;
 					break;
 				}
-			}
-			obsX = pWegPunkt.getX();
-			obsY = pWegPunkt.getY();
-			zielWeg = abstand(x, y, obsX, obsY);
-			//System.out.println("Zielweg: " + zielWeg);
+						
+			zielWeg = abstand(x, y, pWegPunkt.getX(), pWegPunkt.getY());
+			umWeg = abstand(x, y, pAnfahrt.getX(), pAnfahrt.getY());
+			System.out.println("Zielweg: " + zielWeg);
 			
-			if(zielWeg < stopRadWP && !dualWP && wp1) {
+			if (wp1) {
+				obsX = pAnfahrt.getX();
+				obsY = pAnfahrt.getY();
+			}
+			
+			if (umWeg < stopRadWP) {
+				obsX = pWegPunkt.getX();
+				obsY = pWegPunkt.getY();
+				wp1 = false;
+			}
+			
+			if(zielWeg < stopRadWP && !wp3 && !wp2) {
 				obsX = pZiel.getX();
 				obsY = pZiel.getY();
 				hit = false;
+				wp1 = true;
+				wp2 = true;
 			}
-			System.out.println("dualWp: " + dualWP);
+			//System.out.println("dualWp: " + dualWP);
 		}
 		
-		autoX = (int) info.getX();
-		autoY = (int) info.getY();
 		maxVel = info.getMaxVelocity(); // Maximale Geschwindigkeit ist 28.0
 		maxTurnSpeed = info.getMaxAngularVelocity(); // 1.5
 		turnSpeed = info.getAngularVelocity();
