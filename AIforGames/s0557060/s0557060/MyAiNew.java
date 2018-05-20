@@ -54,7 +54,6 @@ public class MyAiNew extends AI {
 	float abbremsRad = 10;
 	float stopRad = 5;
 	float stopRadWP = 10;
-	float stopRadWP2 = 2;
 	float rotZielAbsWinkel; // Winkel zwischen der Orientiereung des Autos und
 							// dem Ziel
 	float zielWinkel;
@@ -99,7 +98,7 @@ public class MyAiNew extends AI {
 
 	@Override
 	public String getName() {
-		return "KonstantimNEW";
+		return "Konstantim";
 	}
 
 	@Override
@@ -119,8 +118,11 @@ public class MyAiNew extends AI {
 		// System.out.println("Checkpoint Charlie: " +
 		// info.getCurrentCheckpoint());
 		track = info.getTrack();
-		obsX = (float) info.getCurrentCheckpoint().getX();
-		obsY = (float) info.getCurrentCheckpoint().getY();
+		System.out.println("obsX: " + obsX + " || obsY: " + obsY + " || "+ hit);
+		if (hit == false){
+			obsX = (float) info.getCurrentCheckpoint().getX();
+			obsY = (float) info.getCurrentCheckpoint().getY();
+		}
 //		obsX = 600;
 //		obsY = 600;
 		
@@ -163,15 +165,15 @@ public class MyAiNew extends AI {
 			Point pZiel = new Point(info.getCurrentCheckpoint().x, info.getCurrentCheckpoint().y);
 			int autoQ = quadTr11(x, y);
 			zielQ = quadTr11(pZiel.getX(), pZiel.getY());
-			Point p1 = new Point(375, 625);
-			Point p2 = new Point(625, 625);
-			Point p3 = new Point(375, 375);
-			Point p4 = new Point(625, 375);
-			
+			Point p1 = new Point(275, 625);
+			Point p2 = new Point(725, 625);
+			Point p3 = new Point(275, 375);
+			Point p4 = new Point(725, 375);
 			float zielWeg = abstand(x, y, pWegPunkt.getX(), pWegPunkt.getY());
 			float umWeg = abstand(x, y, pAnfahrt.getX(), pAnfahrt.getY());
 			
-			while (autoQ == 1){ 
+			switch(autoQ) {
+			case 1: 
 				if(wp2) {
 					
 					pAnfahrt = p1;
@@ -203,7 +205,7 @@ public class MyAiNew extends AI {
 					}
 					break;
 				}
-			}while (autoQ == 2){ 
+			case 2: 
 				if(wp2) {
 					pAnfahrt = p2;
 					wp2 = false;
@@ -234,7 +236,7 @@ public class MyAiNew extends AI {
 					}
 					break;
 				}
-			}while (autoQ == 3){
+			case 3: 
 				if(wp2) {
 					pAnfahrt = p3;
 					wp2 = false;
@@ -264,7 +266,7 @@ public class MyAiNew extends AI {
 					}
 					break;
 				}
-			}while(autoQ == 4){
+			case 4: 
 				if(wp2) {
 					pAnfahrt = p4;
 					wp2 = false;
@@ -290,14 +292,15 @@ public class MyAiNew extends AI {
 						wp3 = false;
 					}
 					break;
-				}else if(zielQ == 4)
+				}else if(zielQ == 4){
 					wp2 = true;
 					wp3 = false;
 					break;
-				}
-			System.out.println("AutoQ : " + autoQ);
-			System.out.println("zielQ :" + zielQ);
-			System.out.println("Ziel X: " + obsX + "|| Ziel Y: " + obsY);
+				}}
+			//System.out.println("AutoQ : " + autoQ);
+			//System.out.println("zielQ :" + zielQ);
+			System.out.println("WP1: " + wp1 + "|| WP2 : " + wp2 + "|| WP3: " + wp3);
+			//System.out.println("pAnfahrt: " + pAnfahrt);
 			zielWeg = abstand(x, y, pWegPunkt.getX(), pWegPunkt.getY());
 			umWeg = abstand(x, y, pAnfahrt.getX(), pAnfahrt.getY());
 			//System.out.println("Zielweg: " + zielWeg);
@@ -312,10 +315,12 @@ public class MyAiNew extends AI {
 				obsX = pWegPunkt.getX();
 				obsY = pWegPunkt.getY();
 				wp1 = false;
+				wp3 = false;
 				System.out.println("2. Punkt");
 			}
 			
 			if(zielWeg < stopRadWP && !wp3 && !wp2) {
+				System.out.println("3. Punkt");
 				obsX = pZiel.getX();
 				obsY = pZiel.getY();
 				hit = false;
@@ -351,6 +356,7 @@ public class MyAiNew extends AI {
 //		System.out.println("Beschleunigung: " + beschleunigung());
 //		System.out.println("Drehbeschleunigung: " + lenkung());
 //		System.out.println("TurnSpeed: " + info.getAngularVelocity());
+//		System.out.println(hit);
 		
 		return new DriverAction(beschleunigung(), lenkung());
 	}
