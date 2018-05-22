@@ -69,12 +69,12 @@ public class MyAiNew extends AI {
 	double rotL;
 	double gruenR;
 	double rotR;
-	double sensorLinksX;
-	double sensorLinksY;
-	double sensorMitteX;
-	double sensorMitteY;
-	double sensorRechtsX;
-	double sensorRechtsY;
+	float sensorLinksX;
+	float sensorLinksY;
+	float sensorMitteX;
+	float sensorMitteY;
+	float sensorRechtsX;
+	float sensorRechtsY;
 	int sensLaenge = 16;
 	int sensLaengeSeite = 8;
 	boolean hit = false;
@@ -90,13 +90,7 @@ public class MyAiNew extends AI {
 	public MyAiNew(Info info) {
 		super(info);
 		// nlistForDevelopment(); //Nur zum testen
-		enlistForTournament(557060, 556736); // Beide Matrikelnummern übergeben
-												// für Anmeldung als Gruppe
-
-		// int ziel1 = obstacles[2].npoints; //Zeigt Punkte des Polygons
-
-		// obstacles[2].xpoints[3]; //Koordinaten des dritten Punktes
-		// obstacles[2].ypoints[3];
+		enlistForTournament(557060, 556736);
 	}
 
 	@Override
@@ -107,8 +101,6 @@ public class MyAiNew extends AI {
 	@Override
 	public DriverAction update(boolean wasResetAfterCollision) {
 
-		
-		if(wasResetAfterCollision) hit = false;
 		x = info.getX(); // Startpunkt = (500, 500)
 		y = info.getY();
 		nX = (float) (Math.cos(ori));
@@ -131,43 +123,8 @@ public class MyAiNew extends AI {
 			obsX = (float) info.getCurrentCheckpoint().getX();
 			obsY = (float) info.getCurrentCheckpoint().getY();
 		}
-//		obsX = 600;
-//		obsY = 600;
 		
-		//Kollision
-		Rectangle2D sensL = new Rectangle2D.Double(sensorLinksX-1, sensorLinksY-1, 2, 2);
-		Rectangle2D sensR = new Rectangle2D.Double(sensorRechtsX-1, sensorRechtsY-1, 2, 2);
-		Rectangle2D sensM = new Rectangle2D.Double(sensorMitteX-1, sensorMitteY-1, 2, 2);
-		
-		for(Polygon p : obstacles) {
-			if(p.contains(sensL)) {
-				rotL = 255;
-				gruenL= 0;
-				hit = true;
-				//System.out.println("Linker Sensor aktiviert!");
-			} else {
-				rotL = 0;
-				gruenL = 255;
-			}
-			if(p.contains(sensR)) {
-				rotR = 255;
-				gruenR = 0;
-				hit = true;
-				//System.out.println("Rechter Sensor aktiviert!");
-			} else {
-				rotR = 0;
-				gruenR = 255;
-			}
-			if(p.contains(sensM)) {
-				rotM = 255;
-				gruenM = 0;
-				hit = true;
-				//System.out.println("Mittlerer Sensor aktiviert!");
-			} else {
-				rotM = 0;
-				gruenM = 255;
-			}		
-		}
+		collisionDetect();
 		
 		if (height == 1000) {
 			wegpunkteTr11();
@@ -181,8 +138,6 @@ public class MyAiNew extends AI {
 		// System.out.println("maxAnglAcce: " +
 		// info.getMaxAngularAcceleration());
 		oriWink(); // Errechnet den Winkel zwischen den Orientierungen
-		collisionDetection();
-		//driveCalc();
 		
 		// Consoleprints der Werte
 		// System.out.println("x: " + x + ", y: " + y);
@@ -203,6 +158,51 @@ public class MyAiNew extends AI {
 //		System.out.println("TurnSpeed: " + info.getAngularVelocity());
 		
 		return new DriverAction(beschleunigung(), lenkung());
+	}
+
+	public void collisionDetect() {
+		
+		sensorMitteX = (float) (x + Math.cos(ori)*sensLaenge);
+		sensorMitteY = (float)(y + Math.sin(ori)*sensLaenge);
+		sensorLinksX = (float)(x + Math.cos(ori + Math.PI/3)*sensLaengeSeite);
+		sensorLinksY = (float)(y + Math.sin(ori + Math.PI/3)*sensLaengeSeite);
+		sensorRechtsX = (float)(x + Math.cos(ori - Math.PI/3)*sensLaengeSeite);
+		sensorRechtsY = (float)(y + Math.sin(ori - Math.PI/3)*sensLaengeSeite);
+		
+		//Kollision
+//		Rectangle2D sensL = new Rectangle2D.Double(sensorLinksX-1, sensorLinksY-1, 2, 2);
+//		Rectangle2D sensR = new Rectangle2D.Double(sensorRechtsX-1, sensorRechtsY-1, 2, 2);
+//		Rectangle2D sensM = new Rectangle2D.Double(sensorMitteX-1, sensorMitteY-1, 2, 2);
+		
+		for(Polygon p : obstacles) {
+			if(p.contains(sensorLinksX, sensorLinksY)) {
+				rotL = 255;
+				gruenL= 0;
+				hit = true;
+				//System.out.println("Linker Sensor aktiviert!");
+			} else {
+				rotL = 0;
+				gruenL = 255;
+			}
+			if(p.contains(sensorRechtsX, sensorRechtsY)) {
+				rotR = 255;
+				gruenR = 0;
+				hit = true;
+				//System.out.println("Rechter Sensor aktiviert!");
+			} else {
+				rotR = 0;
+				gruenR = 255;
+			}
+			if(p.contains(sensorMitteX, sensorMitteY)) {
+				rotM = 255;
+				gruenM = 0;
+				hit = true;
+				//System.out.println("Mittlerer Sensor aktiviert!");
+			} else {
+				rotM = 0;
+				gruenM = 255;
+			}		
+		}
 	}
 
 	private void wegpunkteTr11() {
@@ -380,16 +380,20 @@ public class MyAiNew extends AI {
 
 	private void wegpunkteTr12() {
 		//Wegpunkte
+		int counter = 0;
+		if(counter > 2) {
+			hit = false;
+		}
 		if(hit == true) {
 			Point pZiel = new Point(info.getCurrentCheckpoint().x, info.getCurrentCheckpoint().y);
 			int autoQ = quadTr12(x, y);
 			zielQ = quadTr12(pZiel.getX(), pZiel.getY());
-			Point p1 = new Point((int) (1./6.*width), (int) (1./4.*height));
-			Point p2 = new Point((int) (3./6.*width), (int) (1./4.*height));
-			Point p3 = new Point((int) (5./6.*width), (int) (1./4.*height));
-			Point p4 = new Point((int) (1./6.*width), (int) (3./4.*height));
-			Point p5 = new Point((int) (3./6.*width), (int) (3./4.*height));
-			Point p6 = new Point((int) (5./6.*width), (int) (3./4.*height));
+			Point p1 = new Point((int) (1./6.*width), (int) (3./4.*height));
+			Point p2 = new Point((int) (3./6.*width), (int) (3./4.*height));
+			Point p3 = new Point((int) (5./6.*width), (int) (3./4.*height));
+			Point p4 = new Point((int) (1./6.*width), (int) (1./4.*height));
+			Point p5 = new Point((int) (3./6.*width), (int) (1./4.*height));
+			Point p6 = new Point((int) (5./6.*width), (int) (1./4.*height));
 			
 			float zielWeg = abstand(x, y, pWegPunkt.getX(), pWegPunkt.getY());
 			float umWeg = abstand(x, y, pAnfahrt.getX(), pAnfahrt.getY());
@@ -428,7 +432,7 @@ public class MyAiNew extends AI {
 					break;
 				}else if(zielQ == 5) {
 					if(umWeg < stopRadWP) {
-						wp3 = true;
+						wp3 = true; 
 						pWegPunkt = p4;
 					}
 					break;
@@ -677,6 +681,7 @@ public class MyAiNew extends AI {
 				obsY = pWegPunkt.getY();
 				wp1 = false;
 				wp3 = false;
+				counter++;
 				System.out.println("2. Punkt");
 			}
 			
@@ -686,6 +691,8 @@ public class MyAiNew extends AI {
 				hit = false;
 				wp1 = true;
 				wp2 = true;
+				wp3 = false;
+				counter = 0;
 			}
 			//System.out.println("dualWp: " + dualWP);
 		}
@@ -742,64 +749,6 @@ public class MyAiNew extends AI {
 	public String getTextureResourceName() {
 		return "/s0557060/car.png";
 	}
-	
-	
-//	public void driveCalc(){
-//		
-//	
-//	float zielWeg = abstand(x,y,obsX,obsY);
-//		
-//		if(rotZielAbsWinkel < toleranz){
-//			wunschDrehGeschw = 0;
-//			wunschGeschw = maxVel;
-//		}else if(zielWeg < stopRad){
-//			wunschGeschw = 0;
-//		}
-//		
-//		if(rotZielAbsWinkel < bremsWinkel && zielWeg > bremsRadius){
-//			wunschDrehGeschw = rotZielWinkel * maxTurnSpeed / bremsWinkel;
-//			wunschGeschw = maxVel;
-//		} else if(rotZielAbsWinkel > bremsWinkel){
-//			wunschGeschw = 1;
-//			if(rotZielWinkel >= 0){
-//				wunschDrehGeschw = maxTurnSpeed;
-//			}else{
-//				wunschDrehGeschw = -maxTurnSpeed;
-//			}
-//		}else if(zielWeg < bremsRadius){
-//			wunschGeschw = zielWeg * maxVel / bremsRadius;
-//		}
-//		
-//		wunschDrehGeschw = wunschDrehGeschw / maxTurnSpeed;
-//		
-//		boolean hit = false;
-//		
-//		if(hit){
-//			wunschGeschw = -info.getMaxBackwardVelocity();
-//			wunschDrehGeschw = -maxTurnSpeed;
-//		}
-//		
-//		beschlGes = (wunschGeschw - getVelCoord.length()) / 1;
-//		
-//		if(beschlGes > maxAcceleration){
-//			beschlGes = maxAcceleration;
-//		}
-//		
-//		drehBeschlGes = (wunschDrehGeschw - turnSpeed) / 1;
-//		
-//		if(drehBeschlGes > maxAngularAccelaration){
-//			drehBeschlGes = maxAngularAccelaration;
-//		}
-		
-//	}
-	
-//	public boolean collision(int obsNum, Line2D sens){
-//		Point p = new Point((int) info.getX() + Math.cos(info.getOrientation()) * 15,(int) info.getX() + Math.cos(info.getOrientation()) * 15);
-//	}
-	// @Override
-	// public boolean isEnabledForRacing() {
-	// return true;
-	// }
 
 	private float beschleunigung() { // Translation
 		float ret; 
@@ -854,238 +803,53 @@ public class MyAiNew extends AI {
 			richtung = maxAngularAccelaration;
 		}
 
-		// if(rotZielWinkel < 0) {
-		// abbremsWinkel = 0 - abbremsWinkel;
-		// } else {
-		// abbremsWinkel = this.abbremsWinkel;
-		// }
-		// if(rotZielWinkel < abbremsWinkel && abbremsWinkel > 0) {
-		// richtung = rotZielWinkel * (maxTurnSpeed / abbremsWinkel);
-		// System.out.println("Abbwink > 0: " + abbremsWinkel);
-		// } else if(rotZielWinkel > abbremsWinkel && abbremsWinkel < 0){
-		// richtung = rotZielWinkel * (maxTurnSpeed / abbremsWinkel);
-		// System.out.println("Abbwink < 0: " + abbremsWinkel);
-
-		// DAS
-		// HIER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		// Berechnung der Drehgeschwindigkeit mit Winkeln im Betrag(werden unten
-		// + oder -)
-//		if (rotZielAbsWinkel < toleranz) {
-//			wunschDrehGeschw = 0;
-//			System.out.println("Genau richtig!");
-//		} else if (rotZielAbsWinkel < abbremsWinkel) {
-//			wunschDrehGeschw = rotZielWinkel * maxTurnSpeed / abbremsWinkel;
-//			System.out.println("lenk ein bisschen!");
-//		} else {
-//			if(rotZielWinkel > 0){
-//				wunschDrehGeschw = maxTurnSpeed;
-//				System.out.println("Lenk doll links!");
-//			} else {
-//				wunschDrehGeschw = -maxTurnSpeed;
-//				System.out.println("Lenk doll rechts!");
-//			}
-//		}
-//		//wunschDrehGeschw = wunschDrehGeschw/maxTurnSpeed;
-//		// turnSpeed = -(maxTurnSpeed/1) * richtung + maxTurnSpeed;
-//		richtung = (wunschDrehGeschw - turnSpeed) / wunschZeit;
-//		if (richtung > 1) {
-//			richtung = 1f; // MaxDrehBeschleunigung
-//		} else if(richtung < -1){
-//			richtung = -1;
-//		}
-		
-		
-
-//		if (rotZielWinkel > 0 + toleranz) {
-//			return richtung = richtung;
-//		} else if (rotZielWinkel < 0 - toleranz) {
-//			return richtung = -richtung;
-//		}
-
-		// keine Benutzung der Winkel im Betrag:
-		// if(rotZielAbsWinkel < abbremsWinkel) {
-		// if(rotZielWinkel <= 0) {
-		// wunschDrehGeschw = rotZielWinkel * (maxTurnSpeed / abbremsWinkel);
-		// } else {
-		// wunschDrehGeschw = rotZielWinkel * (maxTurnSpeed / -abbremsWinkel);
-		// }
-		// } else if(rotZielWinkel < 0 && rotZielAbsWinkel > abbremsWinkel) {
-		// wunschDrehGeschw = -2.5f;
-		// if(wunschDrehGeschw < -1) {
-		// wunschDrehGeschw = -1;
-		// }
-		// } else if(rotZielWinkel > 0 && rotZielAbsWinkel > abbremsWinkel){
-		// wunschDrehGeschw = 2.5f;
-		// if(wunschDrehGeschw > 1) {
-		// wunschDrehGeschw = 1;
-		// }
-
-		// richtung = wunschDrehGeschw - turnSpeed / wunschZeit;
-
-		// float zielWinkel = atan2Vector(ax, ay, bx,by); //Winkel des Vektors
-		// vom Auto zum Ziel (Ursprung ist Auto)
-		// System.out.println("zielWinkel: " + zielWinkel);
-		//
-		// float rotZielWinkel = zielWinkel - ori; //Winkel zwischen der
-		// Orientiereung des Autos und dem Ziel
-		// System.out.println("rotZielWinkel: " + rotZielWinkel);
-		//
-		// if(rotZielWinkel < abbremsWinkel) {
-		// wunschDrehGeschw = Math.abs(rotZielWinkel * maxTurnSpeed /
-		// abbremsWinkel);
-		// } else {
-		// wunschDrehGeschw = maxTurnSpeed;
-		// }
-		// System.out.println("Wunschdreh: " + wunschDrehGeschw);
-		//
-		// drehBeschleunigung = idealBeschleunigung(turnSpeed, wunschDrehGeschw,
-		// wunschZeit); //Zwischen 0 und 1.5
-		////
-		// if(drehBeschleunigung > maxAcceleration) { //Clippingabfrage
-		// drehBeschleunigung = maxAcceleration;
-		// } 
-		//
-		// richtung = (float) (rotZielWinkel / Math.PI);
-		// if (rotZielWinkel <= Math.PI / 4) {
-		// richtung = -1;
-		// } else if (rotZielWinkel >= -Math.PI / 4) {
-		// richtung = 1;
-		// }
-		// if (rotZielWinkel <= Math.PI / 4 && turnSpeed < 0.5 && rotZielWinkel
-		// >= -Math.PI / 4) {
-		// richtung = 0;
-		// }
 		return richtung;
-		// if (ori > rotZielWinkel) {
-		// richtung = -1;
-		// return richtung;
-		// } else if(ori < rotZielWinkel){
-		// richtung = 1;
-		// return richtung;
-		// }else {
-		// richtung = 0;
-		// return richtung;
-		// }
 	}
 
-	// public int harmReihe () {
-	// int richtung;
-	// i = i+1;
-	// if(i%3 == 0) {
-	// return -1;
-	// }else {
-	// return 1;
-	// }
-	// //i = i+1;
-	// //richtung = (int) Math.pow(-1, i);
-	// //System.out.println(richtung);
-	// //return richtung;
-	// }
-
-	// public float urschpWink(int x, int y) {
-	// //float wink;
-	// float piWink;
-	// float m;
-	// m = y / x;
-	// piWink = (float) Math.atan(m);
-	// return piWink;
-	// }
-//	
-//	private boolean collision(Rectangle2D col) {
-//		return bounds.intersects(col);
-//	}
-//	
-	public void collisionDetection() {
-		
-//		Rectangle2D sensL = new Rectangle2D.Double(sensorLinksX-1, sensorLinksY-1, 2, 2);
-//		Rectangle2D sensR = new Rectangle2D.Double(sensorRechtsX-1, sensorRechtsY-1, 2, 2);
-//		Rectangle2D sensM = new Rectangle2D.Double(sensorMitteX-1, sensorMitteY-1, 2, 2);
+//	public void doDebugStuff() {
+//
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(255, 0, 0);
+//		GL11.glVertex2f(info.getX(), info.getY());
+//		GL11.glVertex2d(info.getX() + Math.cos(info.getOrientation()) * 15,	info.getY() + Math.sin(info.getOrientation()) * 15);
+//		GL11.glEnd();
+//
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(0, 255, 0);
+//		GL11.glVertex2f(info.getX(), info.getY());
+//		GL11.glVertex2f(obsX, obsY);
+//		GL11.glEnd();
+//
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(0, 0, 255);
+//		GL11.glVertex2f(x, y);
+//		GL11.glVertex2f(x + getVelCoord.x, y + getVelCoord.y);
+//		GL11.glEnd();
 //		
-//		for(Polygon p : obstacles) {
-//			if(p.contains(sensL)) {
-//				rotL = 255;
-//				gruenL= 0;
-//				System.out.println("Linker Sensor aktiviert!");
-//				obsX = 500;
-//				obsY = 100;
-//			} else {
-//				rotL = 0;
-//				gruenL = 255;
-//			}
-//			if(p.contains(sensR)) {
-//				rotR = 255;
-//				gruenR = 0;
-//				System.out.println("Rechter Sensor aktiviert!");
-//				obsX = 500;
-//				obsY = 100;
-//			} else {
-//				rotR = 0;
-//				gruenR = 255;
-//			}
-//			if(p.contains(sensM)) {
-//				rotM = 255;
-//				gruenM = 0;
-//				System.out.println("Mittlerer Sensor aktiviert!");
-//				obsX = 500;
-//				obsY = 100;
-//			} else {
-//				rotM = 0;
-//				gruenM = 255;
-//			}		
-//		}
-		
-	}
-	
-	public void doDebugStuff() {
-
-		GL11.glBegin(GL11.GL_LINES);
-		GL11.glColor3d(255, 0, 0);
-		GL11.glVertex2f(info.getX(), info.getY());
-		GL11.glVertex2d(info.getX() + Math.cos(info.getOrientation()) * 15,	info.getY() + Math.sin(info.getOrientation()) * 15);
-		GL11.glEnd();
-
-		GL11.glBegin(GL11.GL_LINES);
-		GL11.glColor3d(0, 255, 0);
-		GL11.glVertex2f(info.getX(), info.getY());
-		GL11.glVertex2f(obsX, obsY);
-		GL11.glEnd();
-
-		GL11.glBegin(GL11.GL_LINES);
-		GL11.glColor3d(0, 0, 255);
-		GL11.glVertex2f(x, y);
-		GL11.glVertex2f(x + getVelCoord.x, y + getVelCoord.y);
-		GL11.glEnd();
-		
-		//Darstellung der Kollisionssensoren
-		sensorMitteX = (x + Math.cos(ori)*sensLaenge);
-		sensorMitteY = (y + Math.sin(ori)*sensLaenge);
-		sensorLinksX = (x + Math.cos(ori + Math.PI/3)*sensLaengeSeite);
-		sensorLinksY = (y + Math.sin(ori + Math.PI/3)*sensLaengeSeite);
-		sensorRechtsX = (x + Math.cos(ori - Math.PI/3)*sensLaengeSeite);
-		sensorRechtsY = (y + Math.sin(ori - Math.PI/3)*sensLaengeSeite);
-
-		GL11.glBegin(GL11.GL_POINTS);
-		GL11.glColor3d(rotM, gruenM, 0);
-		GL11.glVertex2d(sensorMitteX, sensorMitteY); //Mitte
-		GL11.glVertex2d(sensorLinksX, sensorLinksY); //Links
-		GL11.glVertex2d(sensorRechtsX, sensorRechtsY); //Rechts
-		GL11.glEnd();
-	}
+//		//Darstellung der Kollisionssensoren
+////		sensorMitteX = (x + Math.cos(ori)*sensLaenge);
+////		sensorMitteY = (y + Math.sin(ori)*sensLaenge);
+////		sensorLinksX = (x + Math.cos(ori + Math.PI/3)*sensLaengeSeite);
+////		sensorLinksY = (y + Math.sin(ori + Math.PI/3)*sensLaengeSeite);
+////		sensorRechtsX = (x + Math.cos(ori - Math.PI/3)*sensLaengeSeite);
+////		sensorRechtsY = (y + Math.sin(ori - Math.PI/3)*sensLaengeSeite);
+//
+//		GL11.glBegin(GL11.GL_POINTS);
+//		GL11.glColor3d(rotM, gruenM, 0);
+//		GL11.glVertex2d(sensorMitteX, sensorMitteY); //Mitte
+//		GL11.glVertex2d(sensorLinksX, sensorLinksY); //Links
+//		GL11.glVertex2d(sensorRechtsX, sensorRechtsY); //Rechts
+//		GL11.glEnd();
+//	}
 
 	public float atan2Vector(double ax, double ay, double bx, double by) {
 		float zielCoordY;
 		float zielCoordlX;
 		float steigungsWinkel;
 
-		// if(ax > bx) {
-		// zielCoordY = (float)(ay-by);
-		// zielCoordlX = (float)(ax-bx);
-		// } else {
 		zielCoordY = (float) (by - ay);
 		zielCoordlX = (float) (bx - ax);
-		// }
-
-		// steigungM = zielCoordY / zielCoordlX;
+		
 		steigungsWinkel = (float) Math.atan2(zielCoordY, zielCoordlX);
 
 		return steigungsWinkel;
