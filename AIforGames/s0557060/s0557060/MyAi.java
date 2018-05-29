@@ -15,7 +15,7 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.*;
 
-public class MyAi extends AI {
+public class MyAI extends AI {
 
 	float x;
 	float y;
@@ -87,14 +87,12 @@ public class MyAi extends AI {
 	float width;
 	float height;
 	//Rastervariablen
-	int widthR = 50;
-	int heightR = 50;
-	Rectangle2D[] arrW = new Rectangle2D[(int) width/widthR];
-	Rectangle2D[] arrH = new Rectangle2D[(int) height/heightR];
+	int breite = 50;
+	boolean arrB[][];
 	int w;
 	int h;
 
-	public MyAi(Info info) {
+	public MyAI(Info info) {
 		super(info);
 		// nlistForDevelopment(); //Nur zum testen
 		enlistForTournament(557060, 556736);
@@ -121,6 +119,7 @@ public class MyAi extends AI {
 		maxVel = info.getMaxVelocity(); // Maximale Geschwindigkeit ist 28.0
 		maxTurnSpeed = info.getMaxAngularVelocity(); // 1.5
 		turnSpeed = info.getAngularVelocity();
+		arrB = new boolean[(int) (width/breite)][(int) (height/breite)];
 
 		ifHitIsFalse();	//Setzt obsX&Y auf currentCheckpoint
 		collisionDetect();	//Sensoren erkennen Berührung
@@ -132,13 +131,17 @@ public class MyAi extends AI {
 	}
 
 	public void rastern() {		
-		for(Rectangle2D recW : arrW) {
-			w++;
-			System.out.println("w: " + w);
-			for(Rectangle2D recH : arrH) {
-				h++;
+		for(int i = 0; i < arrB.length; i += breite) {
+			for(int j = 0; j < arrB.length; j += breite) {
 				Rectangle2D r = new Rectangle();
-				r.setRect(w, h, widthR, heightR);
+				r.setRect(i, j, breite, breite);
+				for (int k = 0; k < obstacles.length; k++) {
+					if (obstacles[k].intersects(r)) {
+						arrB[i][j] = true;
+					} else {
+						arrB[i][j] = false;
+					}
+				}
 			}
 		}
 	}
@@ -848,41 +851,51 @@ public class MyAi extends AI {
 
 	public void doDebugStuff() {
 
-		GL11.glBegin(GL11.GL_LINES);
-		GL11.glColor3d(255, 0, 0);
-		GL11.glVertex2f(info.getX(), info.getY());
-		GL11.glVertex2d(info.getX() + Math.cos(info.getOrientation()) * 15,	info.getY() + Math.sin(info.getOrientation()) * 15);
-		GL11.glEnd();
-
-		GL11.glBegin(GL11.GL_LINES);
-		GL11.glColor3d(0, 255, 0);
-		GL11.glVertex2f(info.getX(), info.getY());
-		GL11.glVertex2f(obsX, obsY);
-		GL11.glEnd();
-
-		GL11.glBegin(GL11.GL_LINES);
-		GL11.glColor3d(0, 0, 255);
-		GL11.glVertex2f(x, y);
-		GL11.glVertex2f(x + getVelCoord.x, y + getVelCoord.y);
-		GL11.glEnd();
-		
-		//Darstellung der Kollisionssensoren
-		GL11.glBegin(GL11.GL_POINTS);
-		GL11.glColor3d(rotM, gruenM, 0);
-		GL11.glVertex2d(sensorMitteX, sensorMitteY); //Mitte
-		GL11.glVertex2d(sensorLinksX, sensorLinksY); //Links
-		GL11.glVertex2d(sensorRechtsX, sensorRechtsY); //Rechts
-		GL11.glEnd();
-		
 		//Darstellung des Rasters
-//		GL11.glBegin(GL11.GL_LINE_STRIP);
-//		GL11.glColor3d(255, 255, 255);
-//		GL11.glVertex2f(x , y);
-//		GL11.glVertex2f(x, y + heightR);
-//		GL11.glVertex2f(x + widthR, y + heightR);
-//		GL11.glVertex2f(x + widthR, y);
-//		GL11.glVertex2f(x , y);
+		GL11.glLineWidth(3f);
+		for(int i = 0; i < width; i += breite) {
+			for(int j = 0; j < height; j += breite) {
+				GL11.glBegin(GL11.GL_LINES);
+				GL11.glColor3d(1, 1, 1);
+//				GL11.glVertex2f(i, j + 50);
+//				GL11.glVertex2f(i , j);
+//				GL11.glVertex2f(i + 50, j);
+//				GL11.glVertex2f(i + 50, j + 50);
+				GL11.glVertex2d(i, 0);
+				GL11.glVertex2d(i, height);
+				GL11.glVertex2d(0, j);
+				GL11.glVertex2d(width, j);
+				GL11.glEnd();
+			}
+		}
+		
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(255, 0, 0);
+//		GL11.glVertex2f(info.getX(), info.getY());
+//		GL11.glVertex2d(info.getX() + Math.cos(info.getOrientation()) * 15,	info.getY() + Math.sin(info.getOrientation()) * 15);
 //		GL11.glEnd();
+//
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(0, 255, 0);
+//		GL11.glVertex2f(info.getX(), info.getY());
+//		GL11.glVertex2f(obsX, obsY);
+//		GL11.glEnd();
+//
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(0, 0, 255);
+//		GL11.glVertex2f(x, y);
+//		GL11.glVertex2f(x + getVelCoord.x, y + getVelCoord.y);
+//		GL11.glEnd();
+//		
+//		//Darstellung der Kollisionssensoren
+//		GL11.glBegin(GL11.GL_POINTS);
+//		GL11.glColor3d(rotM, gruenM, 0);
+//		GL11.glVertex2d(sensorMitteX, sensorMitteY); //Mitte
+//		GL11.glVertex2d(sensorLinksX, sensorLinksY); //Links
+//		GL11.glVertex2d(sensorRechtsX, sensorRechtsY); //Rechts
+//		GL11.glEnd();
+		
+		
 	}
 
 	public float atan2Vector(double ax, double ay, double bx, double by) {
