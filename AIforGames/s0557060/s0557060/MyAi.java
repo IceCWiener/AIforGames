@@ -15,7 +15,7 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.*;
 
-public class MyAI extends AI {
+public class MyAi extends AI implements Pathfinder{
 
 	float x;
 	float y;
@@ -86,13 +86,15 @@ public class MyAI extends AI {
 	Point pAnfahrt = new Point();
 	float width;
 	float height;
+	
 	//Rastervariablen
-	int breite = 50;
+	int breite = 10;
 	boolean arrB[][];
 	int w;
 	int h;
+	boolean raster = false;
 
-	public MyAI(Info info) {
+	public MyAi(Info info) {
 		super(info);
 		// nlistForDevelopment(); //Nur zum testen
 		enlistForTournament(557060, 556736);
@@ -119,11 +121,12 @@ public class MyAI extends AI {
 		maxVel = info.getMaxVelocity(); // Maximale Geschwindigkeit ist 28.0
 		maxTurnSpeed = info.getMaxAngularVelocity(); // 1.5
 		turnSpeed = info.getAngularVelocity();
-		arrB = new boolean[(int) (width/breite)][(int) (height/breite)];
+		arrB = new boolean[(int) width][(int) height];
 
 		ifHitIsFalse();	//Setzt obsX&Y auf currentCheckpoint
 		collisionDetect();	//Sensoren erkennen Berührung
 		wegpunktMethode();	//Auswahl der richtigen Wegfindungsmethode
+		//rastern();
 		oriWink(); // Errechnet den Winkel zwischen den Orientierungen
 		prints();	//Alle Sysouts
 		
@@ -170,7 +173,10 @@ public class MyAI extends AI {
 			wegpunkteTr12();
 			break;
 		case 8:
-			rastern();
+			if(!raster) {
+				rastern();
+				raster = true;
+			}
 			break;
 			
 		default:
@@ -869,31 +875,47 @@ public class MyAI extends AI {
 			}
 		}
 		
-//		GL11.glBegin(GL11.GL_LINES);
-//		GL11.glColor3d(255, 0, 0);
-//		GL11.glVertex2f(info.getX(), info.getY());
-//		GL11.glVertex2d(info.getX() + Math.cos(info.getOrientation()) * 15,	info.getY() + Math.sin(info.getOrientation()) * 15);
-//		GL11.glEnd();
-//
-//		GL11.glBegin(GL11.GL_LINES);
-//		GL11.glColor3d(0, 255, 0);
-//		GL11.glVertex2f(info.getX(), info.getY());
-//		GL11.glVertex2f(obsX, obsY);
-//		GL11.glEnd();
-//
-//		GL11.glBegin(GL11.GL_LINES);
-//		GL11.glColor3d(0, 0, 255);
-//		GL11.glVertex2f(x, y);
-//		GL11.glVertex2f(x + getVelCoord.x, y + getVelCoord.y);
-//		GL11.glEnd();
-//		
-//		//Darstellung der Kollisionssensoren
-//		GL11.glBegin(GL11.GL_POINTS);
-//		GL11.glColor3d(rotM, gruenM, 0);
-//		GL11.glVertex2d(sensorMitteX, sensorMitteY); //Mitte
-//		GL11.glVertex2d(sensorLinksX, sensorLinksY); //Links
-//		GL11.glVertex2d(sensorRechtsX, sensorRechtsY); //Rechts
-//		GL11.glEnd();
+//		for(int i = 0; i < width; i += breite) {
+//			for(int j = 0; j < height; j += breite) {
+//				GL11.glBegin(GL11.GL_QUADS);
+//				if(!arrB[i][j]) {
+//					GL11.glColor3d(0, 0, 1f);
+//				} else {
+//					GL11.glColor3d(1, 0, 0);
+//				}
+//				GL11.glVertex2f(i + 1, j + 1);
+//				GL11.glVertex2f(i + breite - 1, j + 1);
+//				GL11.glVertex2f(i + breite - 1, j + breite - 1);
+//				GL11.glVertex2f(i + 1, j + breite - 1);
+//				GL11.glEnd();
+//			}
+//		}
+		
+		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(255, 0, 0);
+		GL11.glVertex2f(info.getX(), info.getY());
+		GL11.glVertex2d(info.getX() + Math.cos(info.getOrientation()) * 15,	info.getY() + Math.sin(info.getOrientation()) * 15);
+		GL11.glEnd();
+
+		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(0, 255, 0);
+		GL11.glVertex2f(info.getX(), info.getY());
+		GL11.glVertex2f(obsX, obsY);
+		GL11.glEnd();
+
+		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(0, 0, 255);
+		GL11.glVertex2f(x, y);
+		GL11.glVertex2f(x + getVelCoord.x, y + getVelCoord.y);
+		GL11.glEnd();
+		
+		//Darstellung der Kollisionssensoren
+		GL11.glBegin(GL11.GL_POINTS);
+		GL11.glColor3d(rotM, gruenM, 0);
+		GL11.glVertex2d(sensorMitteX, sensorMitteY); //Mitte
+		GL11.glVertex2d(sensorLinksX, sensorLinksY); //Links
+		GL11.glVertex2d(sensorRechtsX, sensorRechtsY); //Rechts
+		GL11.glEnd();
 		
 		
 	}
