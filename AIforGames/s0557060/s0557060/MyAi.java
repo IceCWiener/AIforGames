@@ -24,7 +24,7 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.*;
 
-public class MyAi extends AI{
+public class MyAI extends AI{
 
 	float x = info.getX();
 	float y = info.getY();
@@ -93,6 +93,7 @@ public class MyAi extends AI{
 	int zielQ = 1;
 	Point pWegPunkt = new Point();
 	Point pAnfahrt = new Point();
+	//info.getFastZones(); //info.getSlowZones() //Für Tracks 30+
 	float width;
 	float height;
 	
@@ -112,10 +113,19 @@ public class MyAi extends AI{
 	int iHit = 0;
 	int jHit = 1;
 	
-	public MyAi(Info info) {
+	public MyAI(Info info) {
 		super(info);
 		// nlistForDevelopment(); //Nur zum testen
 		enlistForTournament(557060, 556736);
+		
+		track = info.getTrack();
+		width = track.getWidth();
+		height = track.getHeight();
+		maxVel = info.getMaxVelocity(); // Maximale Geschwindigkeit ist 28.0
+		maxTurnSpeed = info.getMaxAngularVelocity(); // 1.5
+		arrB = new boolean[(int) width/cellSize][(int) height/cellSize];
+		nodes = new Node[(int) width/cellSize][(int) height/cellSize];
+		rastern();
 	}
 
 	@Override
@@ -138,22 +148,11 @@ public class MyAi extends AI{
 		ori = info.getOrientation(); // -3.14 bis 3.14
 		getVelCoord = info.getVelocity();
 		getVel = (float) Math.sqrt(Math.pow(getVelCoord.x, 2) + Math.pow(getVelCoord.y, 2)); 
-		track = info.getTrack();
-		width = track.getWidth();
-		height = track.getHeight();
-		maxVel = info.getMaxVelocity(); // Maximale Geschwindigkeit ist 28.0
-		maxTurnSpeed = info.getMaxAngularVelocity(); // 1.5
 		turnSpeed = info.getAngularVelocity();
-		arrB = new boolean[(int) width/cellSize][(int) height/cellSize];
-		nodes = new Node[(int) width/cellSize][(int) height/cellSize];
 
 		ifHitIsFalse();	//Setzt obsX&Y auf currentCheckpoint
 		collisionDetect();	//Sensoren erkennen Berührung
 		//wegpunktMethode();	//Auswahl der richtigen Wegfindungsmethode
-		if(!raster) {
-			rastern();
-			raster = true;
-		}
 		if(!neuerWegpunkt) {
 			starSearchAndPrint();
 			neuerWegpunkt = true;
@@ -191,6 +190,7 @@ public class MyAi extends AI{
 				int jMal = frameCheck(j);
 				int jPlus = frameCheck((j+1));
 				int jMinus = frameCheck((j-1));
+				
 				if(!arrB[iMinus][jMinus]) {
 					nodes[i][j].adjacencies = new Edge[] {
 						new Edge(nodes[iMinus][jMinus], abDia)
@@ -260,104 +260,84 @@ public class MyAi extends AI{
     	pathInts.add(part2Int);
     }
     
-    public void AstarSearch(Node source, Node goal){
+	public void AstarSearch(Node source, Node goal) {
 
-            Set<Node> explored = new HashSet<Node>();
+		Set<Node> explored = new HashSet<Node>();
 
-            PriorityQueue<Node> queue = new PriorityQueue<Node>(arrB.length, 
-                    new Comparator<Node>(){
-                             //override compare method
-             public int compare(Node i, Node j){
-                if(i.f_scores > j.f_scores){
-                    return 1;
-                }
-
-                else if (i.f_scores < j.f_scores){
-                    return -1;
-                }
-
-                else{
-                    return 0;
-                }
-             }
-
-                    }
-                    );
-
-            //cost from start
-            try {
-				source.g_scores = 0;
-
-				queue.add(source);
-			} catch (Exception e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+		PriorityQueue<Node> queue = new PriorityQueue<Node>(arrB.length, new Comparator<Node>() {
+			// override compare method
+			public int compare(Node i, Node j) {
+				return (int) Math.signum(j.f_scores - i.f_scores);
 			}
 
-            boolean found = false;
+		});
 
-            while((!queue.isEmpty())&&(!found)){
+		// cost from start
+		source.g_scores = 0;
 
-                    //the node in having the lowest f_score value
-                    Node current = queue.poll();
+		queue.add(source);
 
-                    explored.add(current);
-                    System.out.print(current);
-                    System.out.println();
-                    
-                    //goal found
-                    if(current.value.equals(goal.value)){
-                            found = true;
-                    }
+		boolean found = false;
 
-                    //check every child of current node
-                    for(Edge e : current.adjacencies){
-                            Node child = e.target;
-                            double cost = e.cost;
-                            double temp_g_scores = current.g_scores + cost;
-                            double temp_f_scores = temp_g_scores + child.h_scores;
+		System.out.print("Explored: ");
+		while ((!queue.isEmpty()) && (!found)) {
 
+			// the node in having the lowest f_score value
+			Node current = queue.poll();
 
-                            /*if child node has been evaluated and 
-                            the newer f_score is higher, skip*/
-                            
-                            if((explored.contains(child)) && 
-                                    (temp_f_scores >= child.f_scores)){
-                                    continue;
-                            }
+			explored.add(current);
+			System.out.print(" |" + current + "| ");
 
-                            /*else if child node is not in queue or 
-                            newer f_score is lower*/
-                            
-                            else if((!queue.contains(child)) || 
-                                    (temp_f_scores < child.f_scores)){
+			// goal found
+			if (current.value.equals(goal.value)) {
+				found = true;
+			}
 
-                                    child.parent = current;
-                                    child.g_scores = temp_g_scores;
-                                    child.f_scores = temp_f_scores;
+			// check every child of current node
+			for (Edge e : current.adjacencies) {
+				Node child = e.target;
+				double cost = e.cost;
+				double temp_g_scores = current.g_scores + cost;
+				double temp_f_scores = temp_g_scores + child.h_scores;
 
-                                    if(queue.contains(child)){
-                                            queue.remove(child);
-                                    }
+				/*
+				 * if child node has been evaluated and the newer f_score is higher, skip
+				 */
 
-                                    queue.add(child);
-                                    System.out.print(child);
+				if ((explored.contains(child))) {
+					continue;
+				}
 
-                            }
+				/*
+				 * else if child node is not in queue or newer f_score is lower
+				 */
 
-                    }
+				else if ((!queue.contains(child)) || (temp_f_scores < child.f_scores)) {
 
-            }
-//            System.out.println();
-//            System.out.println("queue:");
-//            for(Node n : queue) {
-//            	System.out.print(n);
-//            }
-//            System.out.println("explored:");
-//            for(Node n : explored) {
-//            	System.out.print(n);
-//            }
-    }
+					child.parent = current;
+					child.g_scores = temp_g_scores;
+					child.f_scores = temp_f_scores;
+
+					if (!queue.contains(child)) {
+						queue.add(child);
+					}
+					//System.out.println("Child: " + child);
+
+				}
+
+			}
+
+		}
+		// System.out.println();
+		// System.out.println("queue:");
+		// for(Node n : queue) {
+		// System.out.print(n);
+		// }
+		// System.out.println("explored:");
+		// for(Node n : explored) {
+		// System.out.print(n);
+		// }
+	}
 
 	public void rastern() {		
 		for(int i = 0; i < arrB.length; i++) {
@@ -384,10 +364,10 @@ public class MyAi extends AI{
 		AstarSearch(nodes[startPx][startPy], nodes[endPx][endPy]);	//Pfad nimmt die Startzelle des Autos sowie die Zielzelle in der sich der Checkpoint befindet. 
 		//TODO Neue Startzelle für das Auto berechnen nachdem getCurrentCheckpoint() sich ändert.
 
-        List<Node> path = printPath(nodes[47][47]);
+        List<Node> path = printPath(nodes[endPx][endPy]);	//node[endPx][endPy]	//Test: [47][47]
         System.out.println();
         System.out.println("Path: " + path);
-        System.out.println(pathInts);
+        System.out.println("selbstgeschriebener Weg" + pathInts);
 	}
 	
 	public void ifHitIsFalse() {
@@ -1172,6 +1152,8 @@ public class MyAi extends AI{
 			}
 		}
 		GL11.glEnd();
+		
+		//Darstellung der Kanten
 		
 		GL11.glBegin(GL11.GL_LINES);
 		GL11.glColor3d(255, 0, 0);
