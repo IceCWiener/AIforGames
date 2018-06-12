@@ -7,6 +7,7 @@ import lenz.htw.ai4g.track.Track;
 import lenz.htw.ai4g.*;
 import java.lang.Math;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -107,7 +108,10 @@ public class MyAi extends AI{
 	int startPy;
 	boolean startPunkt = false;
 	boolean neuerWegpunkt = false;
-
+	List<Integer> pathInts = new ArrayList<Integer>(Arrays.asList(25, 30, 26, 30, 27, 30, 27, 31, 27, 32, 26, 32, 25, 32, 25, 31, 26, 32, 27, 33, 28, 34, 29, 35, 29, 36, 29, 37));
+	int iHit = 0;
+	int jHit = 1;
+	
 	public MyAi(Info info) {
 		super(info);
 		// nlistForDevelopment(); //Nur zum testen
@@ -145,8 +149,15 @@ public class MyAi extends AI{
 
 		ifHitIsFalse();	//Setzt obsX&Y auf currentCheckpoint
 		collisionDetect();	//Sensoren erkennen Berührung
-		wegpunktMethode();	//Auswahl der richtigen Wegfindungsmethode
-		//rastern();
+		//wegpunktMethode();	//Auswahl der richtigen Wegfindungsmethode
+		if(!raster) {
+			rastern();
+			raster = true;
+		}
+		if(!neuerWegpunkt) {
+			starSearchAndPrint();
+			neuerWegpunkt = true;
+		}
 		oriWink(); // Errechnet den Winkel zwischen den Orientierungen
 		prints();	//Alle Sysouts
 		
@@ -154,7 +165,7 @@ public class MyAi extends AI{
 	}
     public void nodeGenerator(int i, int j){
     		
-    		String name = " |" + Integer.toString(i) + " " + Integer.toString(j) + "| ";
+    		String name = Integer.toString(i) + " " + Integer.toString(j);
     		nodes[i][j] = new Node(name, abstand(i, j, obsX, obsY));
     }
     
@@ -170,7 +181,7 @@ public class MyAi extends AI{
 
 	public void addEdges() {
 		float ab = cellSize;
-		float abDia = abstand(0, 0, cellSize, cellSize);
+		float abDia = (float) Math.floor(abstand(0, 0, cellSize, cellSize));
 
 		for(int i = 0; i < nodes.length; i++) {
 			for(int j = 0; j < nodes.length; j++) {
@@ -220,15 +231,17 @@ public class MyAi extends AI{
 						new Edge(nodes[iPlus][jPlus], abDia)
 					};      				
 				}	
+				//System.out.print("Nodes + Edges: " + nodes[i][j] + " " + nodes[i][j].adjacencies);
 			}
 		}
 	}
 
-    public static List<Node> printPath(Node target){
+    public List<Node> printPath(Node target){
             List<Node> path = new ArrayList<Node>();
     
     for(Node node = target; node!=null; node = node.parent){
         path.add(node);
+        //intPathConverter(node);
     }
 
     Collections.reverse(path);
@@ -236,6 +249,17 @@ public class MyAi extends AI{
     return path;
     }
 
+    public void intPathConverter(Node node) {
+    	String name = node.value;
+    	String[] parts = name.split(" ");
+    	String part1 = parts[0];
+    	String part2 = parts[1];
+    	int part1Int = Integer.parseInt(part1);
+    	int part2Int = Integer.parseInt(part2);
+    	pathInts.add(part1Int);
+    	pathInts.add(part2Int);
+    }
+    
     public void AstarSearch(Node source, Node goal){
 
             Set<Node> explored = new HashSet<Node>();
@@ -261,9 +285,14 @@ public class MyAi extends AI{
                     );
 
             //cost from start
-            source.g_scores = 0;
+            try {
+				source.g_scores = 0;
 
-            queue.add(source);
+				queue.add(source);
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 
             boolean found = false;
 
@@ -273,7 +302,9 @@ public class MyAi extends AI{
                     Node current = queue.poll();
 
                     explored.add(current);
-
+                    System.out.print(current);
+                    System.out.println();
+                    
                     //goal found
                     if(current.value.equals(goal.value)){
                             found = true;
@@ -310,13 +341,22 @@ public class MyAi extends AI{
                                     }
 
                                     queue.add(child);
+                                    System.out.print(child);
 
                             }
 
                     }
 
             }
-
+//            System.out.println();
+//            System.out.println("queue:");
+//            for(Node n : queue) {
+//            	System.out.print(n);
+//            }
+//            System.out.println("explored:");
+//            for(Node n : explored) {
+//            	System.out.print(n);
+//            }
     }
 
 	public void rastern() {		
@@ -331,7 +371,7 @@ public class MyAi extends AI{
 						break;
 					}
 				}
-				System.out.print(arrB[i][j]?"#":".");
+				System.out.print(arrB[i][j]?"+":".");
 			}
 			System.out.println();
 		}
@@ -344,18 +384,36 @@ public class MyAi extends AI{
 		AstarSearch(nodes[startPx][startPy], nodes[endPx][endPy]);	//Pfad nimmt die Startzelle des Autos sowie die Zielzelle in der sich der Checkpoint befindet. 
 		//TODO Neue Startzelle für das Auto berechnen nachdem getCurrentCheckpoint() sich ändert.
 
-        List<Node> path = printPath(nodes[endPx][endPy]);
-
+        List<Node> path = printPath(nodes[47][47]);
+        System.out.println();
         System.out.println("Path: " + path);
+        System.out.println(pathInts);
 	}
 	
 	public void ifHitIsFalse() {
 		if(hit == false) {
 			double tempX = 0;
 			double tempY = 0;
-			obsX = (float) info.getCurrentCheckpoint().getX();
-			obsY = (float) info.getCurrentCheckpoint().getY();
+			int[] points= new int[pathInts.size()];
+			int counter = 0;
+			
+			
+			//Abfahren vom path
+			for( int j : pathInts) {
+				points[counter] = j;
+				counter++;
+			}
+			
+			obsX = points[iHit] * cellSize + cellSize/2;
+			obsY = points[jHit] * cellSize + cellSize/2;
+			if(abstand( x, y, obsX, obsY) < 15) {
+					iHit += 2;
+					jHit += 2;
+			}
+			
 			if (!neuerWegpunkt) {
+				obsX = (float) info.getCurrentCheckpoint().getX();
+				obsY = (float) info.getCurrentCheckpoint().getY();
 				tempX = info.getCurrentCheckpoint().getX();
 				tempY = info.getCurrentCheckpoint().getY();
 			}
@@ -1217,5 +1275,6 @@ class Edge{
     public Edge(Node targetNode, double costVal){
             target = targetNode;
             cost = costVal;
+            //System.out.println(" Edgecost: " + cost + " | "  + "Target: " + target + " ");
     }
 }
