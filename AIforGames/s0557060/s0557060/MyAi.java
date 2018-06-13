@@ -24,7 +24,7 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.*;
 
-public class MyAI extends AI{
+public class MyAi extends AI{
 
 	float x = info.getX();
 	float y = info.getY();
@@ -98,8 +98,8 @@ public class MyAI extends AI{
 	float height;
 	
 	//Rastervariablen
-	int cellSize = 20;
-	boolean arrB[][];
+	static int cellSize = 20;
+	Boolean arrB[][];
 	int w;
 	int h;
 	boolean raster = false;
@@ -113,7 +113,7 @@ public class MyAI extends AI{
 	int iHit = 0;
 	int jHit = 1;
 	
-	public MyAI(Info info) {
+	public MyAi(Info info) {
 		super(info);
 		// nlistForDevelopment(); //Nur zum testen
 		enlistForTournament(557060, 556736);
@@ -123,7 +123,7 @@ public class MyAI extends AI{
 		height = track.getHeight();
 		maxVel = info.getMaxVelocity(); // Maximale Geschwindigkeit ist 28.0
 		maxTurnSpeed = info.getMaxAngularVelocity(); // 1.5
-		arrB = new boolean[(int) width/cellSize][(int) height/cellSize];
+		arrB = new Boolean[(int) width/cellSize][(int) height/cellSize];
 		nodes = new Node[(int) width/cellSize][(int) height/cellSize];
 		rastern();
 	}
@@ -181,56 +181,80 @@ public class MyAI extends AI{
 	public void addEdges() {
 		float ab = cellSize;
 		float abDia = (float) Math.floor(abstand(0, 0, cellSize, cellSize));
+		int minKernel = -1;
+		int maxKernel = 1;
 
 		for(int i = 0; i < nodes.length; i++) {
 			for(int j = 0; j < nodes.length; j++) {
-				int iMal = frameCheck(i);
-				int iPlus = frameCheck((i+1));
-				int iMinus = frameCheck((i-1)); 
-				int jMal = frameCheck(j);
-				int jPlus = frameCheck((j+1));
-				int jMinus = frameCheck((j-1));
+//				int iMal = frameCheck(i);
+//				int iPlus = frameCheck((i+1));
+//				int iMinus = frameCheck((i-1)); 
+//				int jMal = frameCheck(j);
+//				int jPlus = frameCheck((j+1));
+//				int jMinus = frameCheck((j-1));
+
+				for (int k = minKernel; k <= maxKernel; k++) {
+					for (int h = minKernel; h <= maxKernel; h++) {
+						if (k == 0 ^ h == 0) {
+							if (i + k == -1 || j + h == -1 || i + k == 50 || j + h == 50) {
+								continue;
+							} else if (arrB[i + k][j + h]) {
+								if (arrB[i + k][j + h] == null) {
+									continue;
+								}
+								nodes[i][j].adjacencies = new Edge[] { new Edge(nodes[i + k][j + h], cellSize) };
+								//System.out.println("Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Target: " + nodes[i+k][j+h].nodeX + "-" + nodes[i+k][j+h].nodeY);
+							}
+						}
+					}
+				}
+				if(nodes[i][j].adjacencies == null) {
+					continue;
+				}
+				for(Edge e : nodes[i][j].adjacencies) {
+					System.out.println("Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Target: " + e.targetX + "-" + e.targetY);
+				}
 				
-				if(!arrB[iMinus][jMinus]) {
-					nodes[i][j].adjacencies = new Edge[] {
-						new Edge(nodes[iMinus][jMinus], abDia)
-					};
-				}
-				if(!arrB[iMal][jMinus]) {
-					nodes[i][j].adjacencies = new Edge[] {
-						new Edge(nodes[iMal][jMinus], ab)
-					};
-				}
-				if(!arrB[iPlus][jMinus]) {
-					nodes[i][j].adjacencies = new Edge[] {
-						new Edge(nodes[iPlus][jMinus], abDia)
-					};
-				}
-				if(!arrB[iMinus][jMal]) {
-					nodes[i][j].adjacencies = new Edge[] {
-						new Edge(nodes[iMinus][jMal], ab)
-					};
-				}
-				if(!arrB[iPlus][jMal]) {
-					nodes[i][j].adjacencies = new Edge[] {
-						new Edge(nodes[iPlus][jMal], ab)
-					};
-				}
-				if(!arrB[iMinus][jPlus]) {
-					nodes[i][j].adjacencies = new Edge[] {
-						new Edge(nodes[iMinus][jPlus], abDia)
-					};
-				}
-				if(!arrB[iMal][jPlus]) {
-					nodes[i][j].adjacencies = new Edge[] {
-						new Edge(nodes[iMal][jPlus], ab)
-					};
-				}
-				if(!arrB[iPlus][jPlus]) {
-					nodes[i][j].adjacencies = new Edge[] {
-						new Edge(nodes[iPlus][jPlus], abDia)
-					};      				
-				}	
+//				if(!arrB[iMinus][jMinus]) {
+//					nodes[i][j].adjacencies = new Edge[] {
+//						new Edge(nodes[iMinus][jMinus], abDia)
+//					};
+//				}
+//				if(!arrB[iMal][jMinus]) {
+//					nodes[i][j].adjacencies = new Edge[] {
+//						new Edge(nodes[iMal][jMinus], ab)
+//					};
+//				}
+//				if(!arrB[iPlus][jMinus]) {
+//					nodes[i][j].adjacencies = new Edge[] {
+//						new Edge(nodes[iPlus][jMinus], abDia)
+//					};
+//				}
+//				if(!arrB[iMinus][jMal]) {
+//					nodes[i][j].adjacencies = new Edge[] {
+//						new Edge(nodes[iMinus][jMal], ab)
+//					};
+//				}
+//				if(!arrB[iPlus][jMal]) {
+//					nodes[i][j].adjacencies = new Edge[] {
+//						new Edge(nodes[iPlus][jMal], ab)
+//					};
+//				}
+//				if(!arrB[iMinus][jPlus]) {
+//					nodes[i][j].adjacencies = new Edge[] {
+//						new Edge(nodes[iMinus][jPlus], abDia)
+//					};
+//				}
+//				if(!arrB[iMal][jPlus]) {
+//					nodes[i][j].adjacencies = new Edge[] {
+//						new Edge(nodes[iMal][jPlus], ab)
+//					};
+//				}
+//				if(!arrB[iPlus][jPlus]) {
+//					nodes[i][j].adjacencies = new Edge[] {
+//						new Edge(nodes[iPlus][jPlus], abDia)
+//					};      				
+//				}	
 				//System.out.print("Nodes + Edges: " + nodes[i][j] + " " + nodes[i][j].adjacencies);
 			}
 		}
@@ -344,10 +368,10 @@ public class MyAI extends AI{
 			for(int j = 0; j < arrB[i].length; j++) {
 				Rectangle2D r = new Rectangle(i*cellSize, j*cellSize, cellSize, cellSize);
 				nodeGenerator(i, j);
-				arrB[i][j] = false;
+				arrB[i][j] = true;
 				for (int k = 0; k < obstacles.length; k++) {
 					if (obstacles[k].intersects(r)) {
-						arrB[i][j] = true;
+						arrB[i][j] = false;
 						break;
 					}
 				}
@@ -381,12 +405,14 @@ public class MyAI extends AI{
 			//Abfahren vom path
 			for( int j : pathInts) {
 				points[counter] = j;
-				counter++;
+				if(counter < pathInts.size()) {
+					counter++;
+				}
 			}
 			
 			obsX = points[iHit] * cellSize + cellSize/2;
 			obsY = points[jHit] * cellSize + cellSize/2;
-			if(abstand( x, y, obsX, obsY) < 15) {
+			if(abstand( x, y, obsX, obsY) < 15 && jHit < pathInts.size()-2) {
 					iHit += 2;
 					jHit += 2;
 			}
@@ -1124,7 +1150,7 @@ public class MyAI extends AI{
 		GL11.glBegin(GL11.GL_LINES);
 		for(int i = 0; i < width; i += cellSize) {
 			for(int j = 0; j < height; j += cellSize) {
-				GL11.glColor3d(1, 1, 1);
+				GL11.glColor3d(0, 0, 0);
 //				GL11.glVertex2f(i, j + 50);
 //				GL11.glVertex2f(i , j);
 //				GL11.glVertex2f(i + 50, j);
@@ -1137,23 +1163,37 @@ public class MyAI extends AI{
 		}
 		GL11.glEnd();
 		
-		GL11.glBegin(GL11.GL_QUADS);
-		for(int i = 0; i < width; i += cellSize) {
-			for(int j = 0; j < height; j += cellSize) {
-				if(!arrB[i/cellSize][j/cellSize]) {
-					GL11.glColor3d(0, 0, 1f);
-				} else {
-					GL11.glColor3d(1, 0, 0);
+//		GL11.glBegin(GL11.GL_QUADS);
+//		for(int i = 0; i < width; i += cellSize) {
+//			for(int j = 0; j < height; j += cellSize) {
+//				if(!arrB[i/cellSize][j/cellSize]) {
+//					GL11.glColor3d(0, 0, 1f);
+//				} else {
+//					GL11.glColor3d(1, 0, 0);
+//				}
+//				GL11.glVertex2f(i + 1, j + 1);
+//				GL11.glVertex2f(i + cellSize - 1, j + 1);
+//				GL11.glVertex2f(i + cellSize - 1, j + cellSize - 1);
+//				GL11.glVertex2f(i + 1, j + cellSize - 1);
+//			}
+//		}
+//		GL11.glEnd();
+		
+		//Darstellung der Kanten
+		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(255, 255, 0);
+		for(int i = 0 ; i < nodes.length; i++) {
+			for(int j = 0; j < nodes.length; j++) {
+				if(nodes[i][j].adjacencies == null) {
+					continue;
 				}
-				GL11.glVertex2f(i + 1, j + 1);
-				GL11.glVertex2f(i + cellSize - 1, j + 1);
-				GL11.glVertex2f(i + cellSize - 1, j + cellSize - 1);
-				GL11.glVertex2f(i + 1, j + cellSize - 1);
+				for(Edge e : nodes[i][j].adjacencies) {
+					GL11.glVertex2d(nodes[i][j].nodeX, nodes[i][j].nodeY);
+					GL11.glVertex2d(e.targetX, e.targetY);
+				}
 			}
 		}
 		GL11.glEnd();
-		
-		//Darstellung der Kanten
 		
 		GL11.glBegin(GL11.GL_LINES);
 		GL11.glColor3d(255, 0, 0);
@@ -1238,10 +1278,19 @@ class Node{
     public double f_scores = 0;
     public Edge[] adjacencies;
     public Node parent;
+    public float nodeX;
+    public float nodeY;
 
     public Node(String val, double hVal){
             value = val;
             h_scores = hVal;
+            String name = value;
+        	String[] parts = name.split(" ");
+        	String part1 = parts[0];
+        	String part2 = parts[1];
+        	this.nodeX= Float.parseFloat(part1) * MyAi.cellSize + MyAi.cellSize/2;
+        	this.nodeY = Float.parseFloat(part2) * MyAi.cellSize + MyAi.cellSize/2;
+            
     }
 
     public String toString(){
@@ -1253,10 +1302,14 @@ class Node{
 class Edge{
     public final double cost;
     public final Node target;
+    public float targetX;
+    public float targetY;
 
     public Edge(Node targetNode, double costVal){
             target = targetNode;
             cost = costVal;
-            //System.out.println(" Edgecost: " + cost + " | "  + "Target: " + target + " ");
+            this.targetX = targetNode.nodeX;
+            this.targetY = targetNode.nodeY;
+            //System.out.println(" Source: " + target.nodeX + "-" + target.nodeY + " | "  + "Target: " + targetX + "-" + targetY + " ");
     }
 }
