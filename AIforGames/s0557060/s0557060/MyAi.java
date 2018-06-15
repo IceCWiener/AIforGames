@@ -163,7 +163,7 @@ public class MyAi extends AI{
 		if(!neuerWegpunkt) {
 			checkPX = info.getCurrentCheckpoint().x;
 			checkPY = info.getCurrentCheckpoint().y;
-			starSearchAndPrint();
+			nodesAStarSearchAndPrint();
 			neuerWegpunkt = true;
 			//System.out.println(neuerWegpunkt);
 		}
@@ -307,9 +307,9 @@ public class MyAi extends AI{
 			for (Edge e : edges) {
 				Node child = e.target;
 				
-				double cost = e.cost + abstand(e.targetX, e.targetY, checkPX, checkPY);
+				e.cost = e.cost - abstand(e.targetX, e.targetY, checkPX, checkPY);
 				
-				double temp_g_scores = current.g_scores + cost;
+				double temp_g_scores = current.g_scores + e.cost;
 				double temp_f_scores = temp_g_scores + child.h_scores;
 
 				/*
@@ -355,7 +355,6 @@ public class MyAi extends AI{
 		for(int i = 0; i < arrB.length; i++) {
 			for(int j = 0; j < arrB[i].length; j++) {
 				Rectangle2D r = new Rectangle(i*cellSize, j*cellSize, cellSize, cellSize);
-				nodeGenerator(i, j);	//TODO nodeGenerator Anfangs und dann einmal pro neuem Checkpoint ausführen, damit h_scores aller nodes sich bei Erstellung immer auf CheckP(Bucharest) bezieht.
 				arrB[i][j] = true;
 				for (int k = 0; k < obstacles.length; k++) {
 					if (obstacles[k].intersects(r)) {
@@ -367,12 +366,17 @@ public class MyAi extends AI{
 			}
 			System.out.println();
 		}
-        addEdges();
 	}
 
-	public void starSearchAndPrint() {
+	public void nodesAStarSearchAndPrint() {
 		int endPx = (int)(checkPX/cellSize);
 		int endPy = (int)(checkPY/cellSize);
+		for(int i = 0; i < arrB.length; i++) {
+			for(int j = 0; j < arrB.length; j++) {
+				nodeGenerator(i, j);
+			}
+		}
+        addEdges();
 		AstarSearch(nodes[startPx][startPy], nodes[endPx][endPy]);	//Pfad nimmt die Startzelle des Autos sowie die Zielzelle in der sich der Checkpoint befindet. 
 		//TODO Neue Startzelle für das Auto berechnen nachdem getCurrentCheckpoint() sich ändert.
 
@@ -427,7 +431,7 @@ public class MyAi extends AI{
 				raster = true;
 			}
 			if(!neuerWegpunkt) {
-				starSearchAndPrint();
+				nodesAStarSearchAndPrint();
 				neuerWegpunkt = true;
 			}
 			break;	
@@ -437,7 +441,7 @@ public class MyAi extends AI{
 				raster = true;
 			}
 			if(!neuerWegpunkt) {
-				starSearchAndPrint();	//A* wird nach jedem neuem Checkpoint neu ausgeführt
+				nodesAStarSearchAndPrint();	//A* wird nach jedem neuem Checkpoint neu ausgeführt
 				neuerWegpunkt = true;
 			}
 			break;
@@ -1315,7 +1319,7 @@ class Node{
 }
 
 class Edge{
-    public final double cost;
+    public double cost;
     public final Node target;
     public float targetX;
     public float targetY;
