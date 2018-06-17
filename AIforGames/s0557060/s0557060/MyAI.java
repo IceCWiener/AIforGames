@@ -7,6 +7,7 @@ import lenz.htw.ai4g.track.Track;
 import lenz.htw.ai4g.*;
 import java.lang.Math;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -25,12 +26,13 @@ import java.awt.geom.*;
 
 public class MyAI extends AI{
 
-	float x;
-	float y;
+	float x = info.getX();
+	float y = info.getY();
 	float nX;
 	float nY;
 	float ori;
-	float checkP;
+	float checkPX;
+	float checkPY;
 	Track track;
 	float richtung;
 	int i = 0;
@@ -58,16 +60,20 @@ public class MyAI extends AI{
 	Vector2f getVelCoord;
 	float getVel;
 	float maxVel;
-	float abbremsRad = 10;
+	float abbremsRad = 1;	//orig = 10
 	float bremsGeschw = 5;
-	float stopRad = 0;
-	float stopRadWP = 10;
+	float stopRad = 5;	//orig = 0
+	float stopRadWP = 1;	//orig = 10
 	float stopRadWP2 = 2;
 	float rotZielAbsWinkel; // Winkel zwischen der Orientiereung des Autos und
 							// dem Ziel
+	float rotZielAbsWinkelCP;
 	float zielWinkel;
+	float zielWinkelCP;
+	float zielAbsWinkelCP;
 	float rotZielWinkel;
-	float toleranz = 0.01f;
+	float rotZielWinkelCP;
+	float toleranz = 0.0f; //orig = 0.01f
 	float lenkSpeed;
 	float maxAngularAccelaration = info.getMaxAngularAcceleration();;
 	
@@ -92,27 +98,52 @@ public class MyAI extends AI{
 	int zielQ = 1;
 	Point pWegPunkt = new Point();
 	Point pAnfahrt = new Point();
+	//info.getFastZones(); //info.getSlowZones() //Für Tracks 30+
 	float width;
 	float height;
 	
 	//Rastervariablen
-	int cellSize = 20;
-	boolean arrB[][];
+	static int cellSize = 2; // orig = 20
+	public int checkPRadius = 5; //orig = 25
+	Boolean arrB[][];
 	int w;
 	int h;
 	boolean raster = false;
 	//Node Generator
-	Node nodes[][] = new Node[cellSize][cellSize];
-
+	Node nodes[][];
+	int startPx;
+	int startPy;
+	boolean startPunkt = false;
+	boolean neuerWegpunkt = false;
+	//List<Integer> pathInts = new ArrayList<Integer>(Arrays.asList(25, 30, 26, 30, 27, 30, 27, 31, 27, 32, 26, 32, 25, 32, 25, 31, 26, 32, 27, 33, 28, 34, 29, 35, 29, 36, 29, 37));
+	List<Integer> pathInts = new ArrayList<Integer>();
+	int iHit = 0;
+	int jHit = 1;
+	int[] points;
+	java.awt.Point temp = null;
+	int lastX;	//Respawnpunkt des Autos
+	int lastY;
+	
 	public MyAI(Info info) {
 		super(info);
 		// nlistForDevelopment(); //Nur zum testen
 		enlistForTournament(557060, 556736);
+		
+		track = info.getTrack();
+		width = track.getWidth();
+		height = track.getHeight();
+		maxVel = info.getMaxVelocity(); // Maximale Geschwindigkeit ist 28.0
+		maxTurnSpeed = info.getMaxAngularVelocity(); // 1.5
+		arrB = new Boolean[(int) width/cellSize][(int) height/cellSize];
+		nodes = new Node[(int) width/cellSize][(int) height/cellSize];
+		rastern();
+		lastX = (int) x;
+		lastY = (int) y;
 	}
 
 	@Override
 	public String getName() {
-		return " ";
+		return "ConsumeMyPants";
 	}
 
 	@Override
@@ -125,331 +156,283 @@ public class MyAI extends AI{
 		ori = info.getOrientation(); // -3.14 bis 3.14
 		getVelCoord = info.getVelocity();
 		getVel = (float) Math.sqrt(Math.pow(getVelCoord.x, 2) + Math.pow(getVelCoord.y, 2)); 
-		track = info.getTrack();
-		width = track.getWidth();
-		height = track.getHeight();
-		maxVel = info.getMaxVelocity(); // Maximale Geschwindigkeit ist 28.0
-		maxTurnSpeed = info.getMaxAngularVelocity(); // 1.5
 		turnSpeed = info.getAngularVelocity();
-		arrB = new boolean[(int) width/cellSize][(int) height/cellSize];
 
-		ifHitIsFalse();	//Setzt obsX&Y auf currentCheckpoint
-		collisionDetect();	//Sensoren erkennen Berührung
-		wegpunktMethode();	//Auswahl der richtigen Wegfindungsmethode
-		//rastern();
+		//collisionDetect();	//Sensoren erkennen Berührung
+		//wegpunktMethode();	//Auswahl der richtigen Wegfindungsmethode
+		//System.out.println(neuerWegpunkt);
+		if(!neuerWegpunkt || lastX == x && lastY == y) {
+			checkPX = info.getCurrentCheckpoint().x;
+			checkPY = info.getCurrentCheckpoint().y;
+			startPx = (int)(x/cellSize);
+			startPy = (int)(y/cellSize);
+			lastX = (int) x;
+			lastY = (int) y;
+			iHit = 0;
+			jHit = 1;
+			nodesAStarSearchAndPrint();
+			neuerWegpunkt = true;
+			System.out.println("LastX: " + lastX + "LastY: " + lastY);
+		}
+		followLikeNSubscribe();	//Setzt obsX&Y auf currentCheckpoint
 		oriWink(); // Errechnet den Winkel zwischen den Orientierungen
+		//oriWinkCP();
 		prints();	//Alle Sysouts
 		
 		return new DriverAction(beschleunigung(), lenkung());
 	}
-//    public void nodeGenerator(int i, int j){
-//    		
-//    		String name = " |" + Integer.toString(i) + " " + Integer.toString(j) + "| ";
-//    		nodes[i][j] = new Node(name, abstand(i, j, obsX, obsY));
-//    }
+    public void nodeGenerator(int i, int j){
+    		
+    		String name = Integer.toString(i) + " " + Integer.toString(j);
+    		nodes[i][j] = new Node(name, abstand(i, j, checkPX, checkPY));
+    }
     
-    
-    //h scores is the straight-line distance from the current city to Bucharest
-//    void nodeGenALT() {
-//    	
-//            //initialize the graph base on the Romania map
-//            Node n1 = new Node("Arad",366);
-//            Node n2 = new Node("Zerind",374);
-//            Node n3 = new Node("Oradea",380);
-//            Node n4 = new Node("Sibiu",253);
-//            Node n5 = new Node("Fagaras",178);
-//            Node n6 = new Node("Rimnicu Vilcea",193);
-//            Node n7 = new Node("Pitesti",98);
-//            Node n8 = new Node("Timisoara",329);
-//            Node n9 = new Node("Lugoj",244);
-//            Node n10 = new Node("Mehadia",241);
-//            Node n11 = new Node("Drobeta",242);
-//            Node n12 = new Node("Craiova",160);
-//            Node n13 = new Node("Bucharest",0);
-//                    Node n14 = new Node("Giurgiu",77);
-//           
-//                    
-//            //initialize the edges
-//            //Arad
-//            n1.adjacencies = new Edge[]{
-//                    new Edge(n2,75),
-//                    new Edge(n4,140),
-//                    new Edge(n8,118)
-//            };
-//             
-//             //Zerind
-//            n2.adjacencies = new Edge[]{
-//                    new Edge(n1,75),
-//                    new Edge(n3,71)
-//            };
-//             
-//
-//             //Oradea
-//            n3.adjacencies = new Edge[]{
-//                    new Edge(n2,71),
-//                    new Edge(n4,151)
-//            };
-//             
-//             //Sibiu
-//            n4.adjacencies = new Edge[]{
-//                    new Edge(n1,140),
-//                    new Edge(n5,99),
-//                    new Edge(n3,151),
-//                    new Edge(n6,80),
-//            };
-//             
-//
-//             //Fagaras
-//            n5.adjacencies = new Edge[]{
-//                    new Edge(n4,99),
-//
-//                    //178
-//                    new Edge(n13,211)
-//            };
-//             
-//             //Rimnicu Vilcea
-//            n6.adjacencies = new Edge[]{
-//                    new Edge(n4,80),
-//                    new Edge(n7,97),
-//                    new Edge(n12,146)
-//            };
-//             
-//             //Pitesti
-//            n7.adjacencies = new Edge[]{
-//                    new Edge(n6,97),
-//                    new Edge(n13,101),
-//                    new Edge(n12,138)
-//            };
-//             
-//             //Timisoara
-//            n8.adjacencies = new Edge[]{
-//                    new Edge(n1,118),
-//                    new Edge(n9,111)
-//            };
-//             
-//             //Lugoj
-//            n9.adjacencies = new Edge[]{
-//                    new Edge(n8,111),
-//                    new Edge(n10,70)
-//            };
-//
-//             //Mehadia
-//            n10.adjacencies = new Edge[]{
-//                    new Edge(n9,70),
-//                    new Edge(n11,75)
-//            };
-//             
-//             //Drobeta
-//            n11.adjacencies = new Edge[]{
-//                    new Edge(n10,75),
-//                    new Edge(n12,120)
-//            };
-//
-//             //Craiova
-//            n12.adjacencies = new Edge[]{
-//                    new Edge(n11,120),
-//                    new Edge(n6,146),
-//                    new Edge(n7,138)
-//            };
-//
-//            //Bucharest
-//            n13.adjacencies = new Edge[]{
-//                    new Edge(n7,101),
-//                    new Edge(n14,90),
-//                    new Edge(n5,211)
-//            };
-//             
-//             //Giurgiu
-//            n14.adjacencies = new Edge[]{
-//                    new Edge(n13,90)
-//            };
-//
-//            AstarSearch(n1, n13);
-//
-//            List<Node> path = printPath(n13);
-//
-//                    System.out.println("Path: " + path);
-//
-//
-//    }
-//
-//	public void addEdges() {
-//		float ab = breite;
-//		float abDia = abstand(0, 0, 10, 10);
-//
-//		for(int i = 0; i < nodes.length; i++) {
-//			for(int j = 0; j < nodes.length; j++) {
-//				if(!arrB[(i-1)*10][(j-1)*10]) {
-//					nodes[i][j].adjacencies = new Edge[] {
-//						new Edge(nodes[(i-1)*10][(j-1)*10], abDia)
-//					};      				
-//				}
-//				if(!arrB[i*10][(j-1)*10]) {
-//					nodes[i][j].adjacencies = new Edge[] {
-//						new Edge(nodes[i*10][(j-1)*10], ab)
-//					};      				
-//				}
-//				if(!arrB[(i+1)*10][(j-1)*10]) {
-//					nodes[i][j].adjacencies = new Edge[] {
-//						new Edge(nodes[(i+1)*10][(j-1)*10], abDia)
-//					};      				
-//				}
-//				if(!arrB[(i-1)*10][j*10]) {
-//					nodes[i][j].adjacencies = new Edge[] {
-//						new Edge(nodes[(i-1)*10][j*10], ab)
-//					};      				
-//				}
-//				if(!arrB[(i+1)*10][j*10]) {
-//					nodes[i][j].adjacencies = new Edge[] {
-//						new Edge(nodes[(i+1)*10][j*10], ab)
-//					};      				
-//				}
-//				if(!arrB[(i-1)*10][(j+1)*10]) {
-//					nodes[i][j].adjacencies = new Edge[] {
-//						new Edge(nodes[(i-1)*10][(j+1)*10], abDia)
-//					};      				
-//				}
-//				if(!arrB[i*10][(j+1)*10]) {
-//					nodes[i][j].adjacencies = new Edge[] {
-//						new Edge(nodes[i*10][(j+1)*10], ab)
-//					};      				
-//				}
-//				if(!arrB[(i+1)*10][(j+1)*10]) {
-//					nodes[i][j].adjacencies = new Edge[] {
-//						new Edge(nodes[(i+1)*10][(j+1)*10], abDia)
-//					};      				
-//				}
-//			}
-//		}
-//	}
-//
-//    public static List<Node> printPath(Node target){
-//            List<Node> path = new ArrayList<Node>();
-//    
-//    for(Node node = target; node!=null; node = node.parent){
-//        path.add(node);
-//    }
-//
-//    Collections.reverse(path);
-//
-//    return path;
-//    }
-//
-//    public static void AstarSearch(Node[][] source, Node[][] goal){
-//
-//            Set<Node> explored = new HashSet<Node>();
-//
-//            PriorityQueue<Node> queue = new PriorityQueue<Node>(20, 
-//                    new Comparator<Node>(){
-//                             //override compare method
-//             public int compare(Node i, Node j){
-//                if(i.f_scores > j.f_scores){
-//                    return 1;
-//                }
-//
-//                else if (i.f_scores < j.f_scores){
-//                    return -1;
-//                }
-//
-//                else{
-//                    return 0;
-//                }
-//             }
-//
-//                    }
-//                    );
-//
-//            //cost from start
-//            source.g_scores = 0;
-//
-//            queue.add(source);
-//
-//            boolean found = false;
-//
-//            while((!queue.isEmpty())&&(!found)){
-//
-//                    //the node in having the lowest f_score value
-//                    Node current = queue.poll();
-//
-//                    explored.add(current);
-//
-//                    //goal found
-//                    if(current.value.equals(goal.value)){
-//                            found = true;
-//                    }
-//
-//                    //check every child of current node
-//                    for(Edge e : current.adjacencies){
-//                            Node child = e.target;
-//                            double cost = e.cost;
-//                            double temp_g_scores = current.g_scores + cost;
-//                            double temp_f_scores = temp_g_scores + child.h_scores;
-//
-//
-//                            /*if child node has been evaluated and 
-//                            the newer f_score is higher, skip*/
-//                            
-//                            if((explored.contains(child)) && 
-//                                    (temp_f_scores >= child.f_scores)){
-//                                    continue;
-//                            }
-//
-//                            /*else if child node is not in queue or 
-//                            newer f_score is lower*/
-//                            
-//                            else if((!queue.contains(child)) || 
-//                                    (temp_f_scores < child.f_scores)){
-//
-//                                    child.parent = current;
-//                                    child.g_scores = temp_g_scores;
-//                                    child.f_scores = temp_f_scores;
-//
-//                                    if(queue.contains(child)){
-//                                            queue.remove(child);
-//                                    }
-//
-//                                    queue.add(child);
-//
-//                            }
-//
-//                    }
-//
-//            }
-//
-//    }
+    public int frameCheck(int x) {
+    	// TODO width/height unterscheiden!(?)
+    	if(x < 0) {
+    		return 0;
+    	}else if(x >= nodes.length) {
+    		return (int) nodes.length-1;
+    	}
+    	return x;
+    }
 
-	public void rastern() {		
+	public void addEdges() {
+		int kernelSize = 1;
+		int counter = 0;
+		int edgeNum = 4;
+		ArrayList<Edge> edges;
+		
+		for(int i = 0; i < nodes.length; i++) {
+			for(int j = 0; j < nodes.length; j++) {
+				
+				nodes[i][j].adjacencies = new ArrayList<Edge>();
+				
+				if (arrB[i][j]) {
+					for (int k = -kernelSize; k <= kernelSize; k++) {
+						for (int h = -kernelSize; h <= kernelSize; h++) {
+							if (counter == edgeNum) {
+								counter = 0;
+							}
+							if (k == 0 ^ h == 0) {
+								if (i + k < 0 || j + h < 0 || i + k > nodes.length - 1 || j + h > nodes.length - 1) {
+									continue;
+								} else if (arrB[i + k][j + h]) {
+									if (arrB[i + k][j + h] == null) {
+										continue;
+									}
+									nodes[i][j].adjacencies.add(new Edge(nodes[i + k][j + h], cellSize));
+									//System.out.println(" Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Edgetarget: " + nodes[i][j].adjacencies[counter].targetX + "-" + nodes[i][j].adjacencies[counter].targetY);
+									//System.out.println("Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Target: " + nodes[i+k][j+h].nodeX + "-" + nodes[i+k][j+h].nodeY);
+									counter++;
+								}
+							}
+						}
+					} 
+				}
+				edges = nodes[i][j].getEdgeArr();
+				if(nodes[i][j].adjacencies == null || edges == null) {
+					continue;
+				}
+//				for(Edge e : edges){
+//					System.out.println("Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Target: " + e.targetX + "-" + e.targetY);
+//				}
+			}
+		}
+	}
+
+	public List<Node> printPath(Node target) {
+		List<Node> path = new ArrayList<Node>();
+
+		for (Node node = target; node != null; node = node.parent) {
+			path.add(node);
+		}
+
+		Collections.reverse(path);
+		pathInts.clear();
+		for (Node e : path) {
+			intPathConverter(e);
+		}
+		points = new int[pathInts.size()];
+		//System.out.println("PathSize:" + pathInts.size());
+		for (int j = 0; j < pathInts.size(); j++) {
+			points[j] = pathInts.get(j);
+		}
+		return path;
+	}
+
+    public void intPathConverter(Node node) {
+    	String name = node.value;
+    	String[] parts = name.split(" ");
+    	String part1 = parts[0];
+    	String part2 = parts[1];
+    	int part1Int = Integer.parseInt(part1);
+    	int part2Int = Integer.parseInt(part2);
+    	pathInts.add(part1Int);
+    	pathInts.add(part2Int);
+    }
+    
+	public void AstarSearch(Node source, Node goal) {
+
+		ArrayList<Edge> edges;
+		
+		Set<Node> explored = new HashSet<Node>();
+
+		PriorityQueue<Node> queue = new PriorityQueue<Node>(arrB.length, new Comparator<Node>() {
+			// override compare method
+			public int compare(Node i, Node j) {
+				return (int) Math.signum(j.f_scores - i.f_scores);
+			}
+
+		});
+
+		// cost from start
+		source.g_scores = 0;
+
+		queue.add(source);
+
+		boolean found = false;
+
+		//System.out.print("Explored: ");
+		while ((!queue.isEmpty()) && (!found)) {
+
+			// the node in having the lowest f_score value
+			Node current = queue.poll();
+			edges = current.getEdgeArr();
+
+			explored.add(current);
+			//System.out.print(" |" + current + "| ");
+
+			// goal found
+			if (current.value.equals(goal.value)) {
+				found = true;
+			}
+
+			// check every child of current node
+			for (Edge e : edges) {
+				Node child = e.target;
+				
+				e.cost = e.cost - abstand(e.targetX, e.targetY, checkPX, checkPY);
+				
+				double temp_g_scores = current.g_scores + e.cost;
+				double temp_f_scores = temp_g_scores + child.h_scores;
+
+				/*
+				 * if child node has been evaluated and the newer f_score is higher, skip
+				 */
+
+				if ((explored.contains(child))) {
+					continue;
+				}
+
+				/*
+				 * else if child node is not in queue or newer f_score is lower
+				 */
+
+				else if ((!queue.contains(child)) || (temp_f_scores < child.f_scores)) {
+
+					child.parent = current;
+					child.g_scores = temp_g_scores;
+					child.f_scores = temp_f_scores;
+
+					if (!queue.contains(child)) {
+						queue.add(child);
+					}
+					//System.out.println("Child: " + child);
+
+				}
+
+			}
+
+		}
+		// System.out.println();
+		// System.out.println("queue:");
+		// for(Node n : queue) {
+		// System.out.print(n);
+		// }
+		// System.out.println("explored:");
+		// for(Node n : explored) {
+		// System.out.print(n);
+		// }
+	}
+
+	public void rastern() {	
+		int kernelSize = 10;
 		for(int i = 0; i < arrB.length; i++) {
 			for(int j = 0; j < arrB[i].length; j++) {
 				Rectangle2D r = new Rectangle(i*cellSize, j*cellSize, cellSize, cellSize);
-				//nodeGenerator(i, j);
-				arrB[i][j] = false;
+				arrB[i][j] = true;
 				for (int k = 0; k < obstacles.length; k++) {
 					if (obstacles[k].intersects(r)) {
-						arrB[i][j] = true;
+						for(int n = -kernelSize; n <= kernelSize; n++) {
+							for(int m = -kernelSize; m <= kernelSize; m++) {
+								if (n+i < 0 || m+j < 0 || n+i > arrB.length-kernelSize || m+j > arrB.length-kernelSize) {
+									continue;
+								}else if(arrB[n+i][m+j] == null) {
+									continue;
+								}
+								arrB[n+i][m+j] = false;									
+							}
+						}
 						break;
 					}
 				}
-				System.out.print(arrB[i][j]?"#":".");
+				System.out.print(arrB[i][j]?".":"+");
 			}
 			System.out.println();
 		}
-//        addEdges();
-//		float startPx = (float)(10*Math.floor(x/10));
-//		float startPy = (float)(10*Math.floor(y/10));
-//		float endPx = (float)(10*Math.floor(obsX/10));
-//		float endPy = (float)(10*Math.floor(obsY/10));
-//		AstarSearch(nodes[startPx][startPy], n);
-//
-//        List<Node> path = printPath(n);
-//
+	}
+
+	public void nodesAStarSearchAndPrint() {
+		int endPx = (int)(checkPX/cellSize);
+		int endPy = (int)(checkPY/cellSize);
+		for(int i = 0; i < arrB.length; i++) {
+			for(int j = 0; j < arrB.length; j++) {
+				nodeGenerator(i, j);
+			}
+		}
+        addEdges();
+		AstarSearch(nodes[startPx][startPy], nodes[endPx][endPy]);	//Pfad nimmt die Startzelle des Autos sowie die Zielzelle in der sich der Checkpoint befindet. 
+
+        List<Node> path = printPath(nodes[endPx][endPy]);	//node[endPx][endPy]	//Test: [47][47]
+//        System.out.println();
 //        System.out.println("Path: " + path);
+//        System.out.println("Ints: " + pathInts);
+//        System.out.print("Points:");
+        for(int i = 0; i < points.length; i+=2) {
+        	//System.out.print(points[i] + " " + points[i+1] + ", ");
+        }
+        //System.out.println("selbstgeschriebener Weg" + pathInts);
 	}
 	
-	public void ifHitIsFalse() {
+	public void followLikeNSubscribe() {
 		if(hit == false) {
-			obsX = (float) info.getCurrentCheckpoint().getX();
-			obsY = (float) info.getCurrentCheckpoint().getY();
+			java.awt.Point currentCP = info.getCurrentCheckpoint();
+			int currentCPX = info.getCurrentCheckpoint().x;
+			int currentCPY = info.getCurrentCheckpoint().y;
+			
+			if(!neuerWegpunkt) {
+				temp = info.getCurrentCheckpoint();
+			}
+			
+			obsX = points[iHit] * cellSize + cellSize/2;
+			obsY = points[jHit] * cellSize + cellSize/2;
+			if(abstand( x, y, obsX, obsY) < 25 && jHit < pathInts.size()-2) {
+					iHit += 2;
+					jHit += 2;
+			}
+			
+			if(abstand(x, y, pathInts.get(pathInts.size()-2)*cellSize + cellSize/2, pathInts.get(pathInts.size()-1)*cellSize+cellSize/2) < checkPRadius) {
+				obsX = (float) info.getCurrentCheckpoint().getX();
+				obsY = (float) info.getCurrentCheckpoint().getY();
+			}
+			//abstand(x, y, (float) info.getCurrentCheckpoint().getX(), (float) info.getCurrentCheckpoint().getY()) <= 10
+			if (currentCPX != checkPX && currentCPY != checkPY) {
+				neuerWegpunkt = false;
+				List<Integer> pathInts = null;
+				iHit = 0;
+				jHit = 1;
+			}
 		}
 	}
 
@@ -474,11 +457,19 @@ public class MyAI extends AI{
 				rastern();
 				raster = true;
 			}
+			if(!neuerWegpunkt) {
+				nodesAStarSearchAndPrint();
+				neuerWegpunkt = true;
+			}
 			break;	
 		case 8:
-			if(!raster) {
+			if(!raster) {	//Raster wird einmalig erstellt
 				rastern();
 				raster = true;
+			}
+			if(!neuerWegpunkt) {
+				nodesAStarSearchAndPrint();	//A* wird nach jedem neuem Checkpoint neu ausgeführt
+				neuerWegpunkt = true;
 			}
 			break;
 			
@@ -496,14 +487,13 @@ public class MyAI extends AI{
 //		System.out.println("Höhe" + height);	//Tr12: 800		//Tr11: 1000
 		// System.out.println("x: " + x + ", y: " + y);
 		// System.out.println("Orientation: " + ori);
-		// System.out.println("Current Checkpoint: " + checkP);
+		 //System.out.println("Current Checkpoint: " + info.getCurrentCheckpoint().getX() + " " + info.getCurrentCheckpoint().getY());
 		// System.out.println("Track: " + track);
 		//richtung = lenkung(abbremsWinkel);
 		// toleranz = emerTol(getVel);
 //		 System.out.println(harmReihe());
 		// System.out.println("Beschleunigung: " + drehBeschleunigung);
-		// System.out.println("Winkel zw Orientierungen(Betrag): " +
-		// rotZielAbsWinkel);
+		//System.out.println("Winkel zw Orientierungen(Betrag): " + rotZielAbsWinkelCP);
 		//System.out.println("Winkel zw Orientierungen: " + rotZielWinkel);
 		//System.out.println("Richtung: " + lenkung(abbremsWinkel));
 		//System.out.println("Toleranz: " + toleranz);
@@ -511,6 +501,10 @@ public class MyAI extends AI{
 //		System.out.println("Drehbeschleunigung: " + lenkung());
 //		System.out.println("TurnSpeed: " + info.getAngularVelocity());
 //		System.out.println("arrb.length: " + arrB.length);
+//		System.out.println("iHit: " + iHit + " jHit: " + jHit);
+//		System.out.println("obsX: " + obsX + " obsY: " + obsY);
+		//System.out.println("The Path: " + pathInts);
+		//System.out.println("Zielwinkel: " + zielWinkel);
 	}
 
 	public void collisionDetect() {
@@ -1097,6 +1091,17 @@ public class MyAI extends AI{
 		}
 		rotZielAbsWinkel = Math.abs(rotZielWinkel);
 	}
+	
+	private void oriWinkCP() {
+		zielWinkelCP = atan2Vector(x, y, checkPX, checkPY);
+		rotZielWinkelCP = zielWinkelCP - ori;
+		if (rotZielWinkelCP >= Math.PI) {
+			rotZielWinkelCP = (float) (rotZielWinkelCP - 2*Math.PI);
+		} else if (rotZielWinkelCP <= -Math.PI) {
+			rotZielWinkelCP = (float) (rotZielWinkelCP + 2*Math.PI);
+		}
+		rotZielAbsWinkelCP = Math.abs(rotZielWinkelCP);
+	}
 
 	@Override
 	public String getTextureResourceName() {
@@ -1159,70 +1164,106 @@ public class MyAI extends AI{
 		return richtung;
 	}
 
-	public void doDebugStuff() {
-
-		//Darstellung des Rasters
-		GL11.glLineWidth(3f);
-		GL11.glBegin(GL11.GL_LINES);
-		for(int i = 0; i < width; i += cellSize) {
-			for(int j = 0; j < height; j += cellSize) {
-				GL11.glColor3d(1, 1, 1);
-//				GL11.glVertex2f(i, j + 50);
-//				GL11.glVertex2f(i , j);
-//				GL11.glVertex2f(i + 50, j);
-//				GL11.glVertex2f(i + 50, j + 50);
-				GL11.glVertex2d(i, 0);
-				GL11.glVertex2d(i, height);
-				GL11.glVertex2d(0, j);
-				GL11.glVertex2d(width, j);
-			}
-		}
-		GL11.glEnd();
-		
-		GL11.glBegin(GL11.GL_QUADS);
-		for(int i = 0; i < width; i += cellSize) {
-			for(int j = 0; j < height; j += cellSize) {
-				if(!arrB[i/cellSize][j/cellSize]) {
-					GL11.glColor3d(0, 0, 1f);
-				} else {
-					GL11.glColor3d(1, 0, 0);
-				}
-				GL11.glVertex2f(i + 1, j + 1);
-				GL11.glVertex2f(i + cellSize - 1, j + 1);
-				GL11.glVertex2f(i + cellSize - 1, j + cellSize - 1);
-				GL11.glVertex2f(i + 1, j + cellSize - 1);
-			}
-		}
-		GL11.glEnd();
-		
-		GL11.glBegin(GL11.GL_LINES);
-		GL11.glColor3d(255, 0, 0);
-		GL11.glVertex2f(info.getX(), info.getY());
-		GL11.glVertex2d(info.getX() + Math.cos(info.getOrientation()) * 15,	info.getY() + Math.sin(info.getOrientation()) * 15);
-		GL11.glEnd();
-
-		GL11.glBegin(GL11.GL_LINES);
-		GL11.glColor3d(0, 255, 0);
-		GL11.glVertex2f(info.getX(), info.getY());
-		GL11.glVertex2f(obsX, obsY);
-		GL11.glEnd();
-
-		GL11.glBegin(GL11.GL_LINES);
-		GL11.glColor3d(0, 0, 255);
-		GL11.glVertex2f(x, y);
-		GL11.glVertex2f(x + getVelCoord.x, y + getVelCoord.y);
-		GL11.glEnd();
-		
-		//Darstellung der Kollisionssensoren
-		GL11.glBegin(GL11.GL_POINTS);
-		GL11.glColor3d(rotM, gruenM, 0);
-		GL11.glVertex2d(sensorMitteX, sensorMitteY); //Mitte
-		GL11.glVertex2d(sensorLinksX, sensorLinksY); //Links
-		GL11.glVertex2d(sensorRechtsX, sensorRechtsY); //Rechts
-		GL11.glEnd();
-		
-		
-	}
+//	public void doDebugStuff() {
+//
+//		//Darstellung des Rasters
+//		GL11.glLineWidth(1f);
+//		GL11.glBegin(GL11.GL_LINES);
+//		for(int i = 0; i < width; i += cellSize) {
+//			for(int j = 0; j < height; j += cellSize) {
+//				GL11.glColor3d(0, 0, 0);
+////				GL11.glVertex2f(i, j + 50);
+////				GL11.glVertex2f(i , j);
+////				GL11.glVertex2f(i + 50, j);
+////				GL11.glVertex2f(i + 50, j + 50);
+//				GL11.glVertex2d(i, 0);
+//				GL11.glVertex2d(i, height);
+//				GL11.glVertex2d(0, j);
+//				GL11.glVertex2d(width, j);
+//			}
+//		}
+//		GL11.glEnd();
+//		
+////		GL11.glBegin(GL11.GL_QUADS);
+////		for(int i = 0; i < width; i += cellSize) {
+////			for(int j = 0; j < height; j += cellSize) {
+////				if(!arrB[i/cellSize][j/cellSize]) {
+////					GL11.glColor3d(0, 0, 1f);
+////				} else {
+////					GL11.glColor3d(1, 0, 0);
+////				}
+////				GL11.glVertex2f(i + 1, j + 1);
+////				GL11.glVertex2f(i + cellSize - 1, j + 1);
+////				GL11.glVertex2f(i + cellSize - 1, j + cellSize - 1);
+////				GL11.glVertex2f(i + 1, j + cellSize - 1);
+////			}
+////		}
+////		GL11.glEnd();
+//		
+//		//Darstellung der Kanten
+//		ArrayList<Edge> edges;
+//		int endPx = (int)(checkPX/cellSize);
+//		int endPy = (int)(checkPY/cellSize);
+//		//List<Node> path = printPath(nodes[endPx][endPy]);
+//		
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(255, 255, 0);
+//		for(int i = 0 ; i < nodes.length; i++) {
+//			for(int j = 0; j < nodes.length; j++) {
+//				edges = nodes[i][j].getEdgeArr();
+//				if(edges == null) {
+//					continue;
+//				}
+//				for(Edge e : edges) {
+//					GL11.glVertex2d(nodes[i][j].nodeX, nodes[i][j].nodeY);
+//					GL11.glVertex2d(e.targetX, e.targetY);
+//				}
+//			}
+//		}
+//		GL11.glEnd();
+//		
+//		List<Node> path = printPath(nodes[endPx][endPy]);	//node[endPx][endPy]	//Test: [47][47]
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(0, 0, 1);
+//		for(Node e : path) {
+//			String name = e.value;
+//	    	String[] parts = name.split(" ");
+//	    	String part1 = parts[0];
+//	    	String part2 = parts[1];
+//	    	int part1Int = Integer.parseInt(part1);
+//	    	int part2Int = Integer.parseInt(part2);
+//			GL11.glVertex2d(part1Int, part2Int);
+//		}
+//		GL11.glEnd();
+//		
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(255, 0, 0);
+//		GL11.glVertex2f(info.getX(), info.getY());
+//		GL11.glVertex2d(info.getX() + Math.cos(info.getOrientation()) * 15,	info.getY() + Math.sin(info.getOrientation()) * 15);
+//		GL11.glEnd();
+//
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(0, 255, 0);
+//		GL11.glVertex2f(info.getX(), info.getY());
+//		GL11.glVertex2f(obsX, obsY);
+//		GL11.glEnd();
+//
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(0, 0, 255);
+//		GL11.glVertex2f(x, y);
+//		GL11.glVertex2f(x + getVelCoord.x, y + getVelCoord.y);
+//		GL11.glEnd();
+//		
+//		//Darstellung der Kollisionssensoren
+//		GL11.glBegin(GL11.GL_POINTS);
+//		GL11.glColor3d(rotM, gruenM, 0);
+//		GL11.glVertex2d(sensorMitteX, sensorMitteY); //Mitte
+//		GL11.glVertex2d(sensorLinksX, sensorLinksY); //Links
+//		GL11.glVertex2d(sensorRechtsX, sensorRechtsY); //Rechts
+//		GL11.glEnd();
+//		
+//		
+//	}
 
 	public float atan2Vector(double ax, double ay, double bx, double by) {
 		float zielCoordY;
@@ -1267,35 +1308,52 @@ public class MyAI extends AI{
 			return 0.1f;
 		}
 	}
-
 }
-
-class Node{
-
-    public final String value;
-    public double g_scores;
-    public final double h_scores;
-    public double f_scores = 0;
-    public Edge[] adjacencies;
-    public Node parent;
-
-    public Node(String val, double hVal){
-            value = val;
-            h_scores = hVal;
-    }
-
-    public String toString(){
-            return value;
-    }
-
-}
-
-class Edge{
-    public final double cost;
-    public final Node target;
-
-    public Edge(Node targetNode, double costVal){
-            target = targetNode;
-            cost = costVal;
-    }
-}
+//}class Node{
+//
+//    public final String value;
+//    public double g_scores;
+//    public final double h_scores;
+//    public double f_scores = 0;
+//    public ArrayList<Edge> adjacencies;
+//    public Node parent;
+//    public float nodeX;
+//    public float nodeY;
+//
+//    public Node(String val, double hVal){
+//            value = val;
+//            h_scores = hVal;
+//            String name = value;
+//        	String[] parts = name.split(" ");
+//        	String part1 = parts[0];
+//        	String part2 = parts[1];
+//        	this.nodeX= Float.parseFloat(part1) * MyAiNew.cellSize + MyAiNew.cellSize/2;
+//        	this.nodeY = Float.parseFloat(part2) * MyAiNew.cellSize + MyAiNew.cellSize/2;
+//            
+//    }
+//    
+//    public ArrayList<Edge> getEdgeArr() {
+//    	ArrayList<Edge> edges = (ArrayList) adjacencies.clone();
+//    	return edges;
+//    }
+//
+//    public String toString(){
+//            return value;
+//    }
+//
+//}
+//
+//class Edge{
+//    public double cost;
+//    public final Node target;
+//    public float targetX;
+//    public float targetY;
+//
+//    public Edge(Node targetNode, double costVal){
+//            target = targetNode;
+//            cost = costVal;
+//            this.targetX = targetNode.nodeX;
+//            this.targetY = targetNode.nodeY;
+//            //System.out.println(" Source: " + target.nodeX + "-" + target.nodeY + " | "  + "Target: " + targetX + "-" + targetY + " ");
+//    }
+//}
