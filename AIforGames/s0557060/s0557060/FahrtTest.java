@@ -24,7 +24,7 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.*;
 
-public class MyAi extends AI{
+public class FahrtTest extends AI{
 
 	float x = info.getX();
 	float y = info.getY();
@@ -60,10 +60,10 @@ public class MyAi extends AI{
 	Vector2f getVelCoord;
 	float getVel;
 	float maxVel;
-	float abbremsRad = 1;	//orig = 10
+	float abbremsRad = 10;
 	float bremsGeschw = 5;
-	float stopRad = 5;	//orig = 0
-	float stopRadWP = 1;	//orig = 10
+	float stopRad = 0;
+	float stopRadWP = 10;
 	float stopRadWP2 = 2;
 	float rotZielAbsWinkel; // Winkel zwischen der Orientiereung des Autos und
 							// dem Ziel
@@ -73,7 +73,7 @@ public class MyAi extends AI{
 	float zielAbsWinkelCP;
 	float rotZielWinkel;
 	float rotZielWinkelCP;
-	float toleranz = 0.0f; //orig = 0.01f
+	float toleranz = 0.01f;
 	float lenkSpeed;
 	float maxAngularAccelaration = info.getMaxAngularAcceleration();;
 	
@@ -103,8 +103,7 @@ public class MyAi extends AI{
 	float height;
 	
 	//Rastervariablen
-	static int cellSize = 10; // orig = 20
-	public int checkPRadius = 5; //orig = 25
+	static int cellSize = 20;
 	Boolean arrB[][];
 	int w;
 	int h;
@@ -122,7 +121,7 @@ public class MyAi extends AI{
 	int[] points;
 	java.awt.Point temp = null;
 	
-	public MyAi(Info info) {
+	public FahrtTest(Info info) {
 		super(info);
 		// nlistForDevelopment(); //Nur zum testen
 		enlistForTournament(557060, 556736);
@@ -139,7 +138,7 @@ public class MyAi extends AI{
 
 	@Override
 	public String getName() {
-		return "EatMyShorts";
+		return "Testauto";
 	}
 
 	@Override
@@ -157,7 +156,7 @@ public class MyAi extends AI{
 		//collisionDetect();	//Sensoren erkennen Berührung
 		//wegpunktMethode();	//Auswahl der richtigen Wegfindungsmethode
 		//System.out.println(neuerWegpunkt);
-		if(!neuerWegpunkt || wasResetAfterCollision) {
+		if(!neuerWegpunkt) {
 			checkPX = info.getCurrentCheckpoint().x;
 			checkPY = info.getCurrentCheckpoint().y;
 			startPx = (int)(x/cellSize);
@@ -190,6 +189,8 @@ public class MyAi extends AI{
     }
 
 	public void addEdges() {
+		float ab = cellSize;
+		float abDia = (float) Math.floor(abstand(0, 0, cellSize, cellSize));
 		int kernelSize = 1;
 		int counter = 0;
 		int edgeNum = 4;
@@ -405,7 +406,7 @@ public class MyAi extends AI{
 					jHit += 2;
 			}
 			
-			if(abstand(x, y, pathInts.get(pathInts.size()-2)*cellSize + cellSize/2, pathInts.get(pathInts.size()-1)*cellSize+cellSize/2) < checkPRadius) {
+			if(abstand(x, y, pathInts.get(pathInts.size()-2)*cellSize + cellSize/2, pathInts.get(pathInts.size()-1)*cellSize+cellSize/2) < 25) {
 				obsX = (float) info.getCurrentCheckpoint().getX();
 				obsY = (float) info.getCurrentCheckpoint().getY();
 			}
@@ -1154,7 +1155,7 @@ public class MyAi extends AI{
 //		GL11.glBegin(GL11.GL_LINES);
 //		for(int i = 0; i < width; i += cellSize) {
 //			for(int j = 0; j < height; j += cellSize) {
-//				GL11.glColor3d(0, 0, 0);
+//				GL11.glColor3d(0.4, 0.4, 0.4);
 ////				GL11.glVertex2f(i, j + 50);
 ////				GL11.glVertex2f(i , j);
 ////				GL11.glVertex2f(i + 50, j);
@@ -1190,7 +1191,7 @@ public class MyAi extends AI{
 //		//List<Node> path = printPath(nodes[endPx][endPy]);
 //		
 //		GL11.glBegin(GL11.GL_LINES);
-//		GL11.glColor3d(255, 255, 0);
+//		GL11.glColor3d(0, 255, 0);
 //		for(int i = 0 ; i < nodes.length; i++) {
 //			for(int j = 0; j < nodes.length; j++) {
 //				edges = nodes[i][j].getEdgeArr();
@@ -1294,51 +1295,3 @@ public class MyAi extends AI{
 
 }
 
-class Node{
-
-    public final String value;
-    public double g_scores;
-    public final double h_scores;
-    public double f_scores = 0;
-    public ArrayList<Edge> adjacencies;
-    public Node parent;
-    public float nodeX;
-    public float nodeY;
-
-    public Node(String val, double hVal){
-            value = val;
-            h_scores = hVal;
-            String name = value;
-        	String[] parts = name.split(" ");
-        	String part1 = parts[0];
-        	String part2 = parts[1];
-        	this.nodeX= Float.parseFloat(part1) * MyAi.cellSize + MyAi.cellSize/2;
-        	this.nodeY = Float.parseFloat(part2) * MyAi.cellSize + MyAi.cellSize/2;
-            
-    }
-    
-    public ArrayList<Edge> getEdgeArr() {
-    	ArrayList<Edge> edges = (ArrayList) adjacencies.clone();
-    	return edges;
-    }
-
-    public String toString(){
-            return value;
-    }
-
-}
-
-class Edge{
-    public double cost;
-    public final Node target;
-    public float targetX;
-    public float targetY;
-
-    public Edge(Node targetNode, double costVal){
-            target = targetNode;
-            cost = costVal;
-            this.targetX = targetNode.nodeX;
-            this.targetY = targetNode.nodeY;
-            //System.out.println(" Source: " + target.nodeX + "-" + target.nodeY + " | "  + "Target: " + targetX + "-" + targetY + " ");
-    }
-}
