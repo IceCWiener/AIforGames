@@ -103,7 +103,7 @@ public class MyAi extends AI{
 	float height;
 	
 	//Rastervariablen
-	static int cellSize = 10; // orig = 20
+	static int cellSize = 2; // orig = 20
 	public int checkPRadius = 5; //orig = 25
 	Boolean arrB[][];
 	int w;
@@ -121,6 +121,8 @@ public class MyAi extends AI{
 	int jHit = 1;
 	int[] points;
 	java.awt.Point temp = null;
+	int lastX;	//Respawnpunkt des Autos
+	int lastY;
 	
 	public MyAi(Info info) {
 		super(info);
@@ -135,6 +137,8 @@ public class MyAi extends AI{
 		arrB = new Boolean[(int) width/cellSize][(int) height/cellSize];
 		nodes = new Node[(int) width/cellSize][(int) height/cellSize];
 		rastern();
+		lastX = (int) x;
+		lastY = (int) y;
 	}
 
 	@Override
@@ -157,14 +161,18 @@ public class MyAi extends AI{
 		//collisionDetect();	//Sensoren erkennen Berührung
 		//wegpunktMethode();	//Auswahl der richtigen Wegfindungsmethode
 		//System.out.println(neuerWegpunkt);
-		if(!neuerWegpunkt || wasResetAfterCollision) {
+		if(!neuerWegpunkt || lastX == x && lastY == y) {
 			checkPX = info.getCurrentCheckpoint().x;
 			checkPY = info.getCurrentCheckpoint().y;
 			startPx = (int)(x/cellSize);
-			startPy = (int)(y/cellSize);	
+			startPy = (int)(y/cellSize);
+			lastX = (int) x;
+			lastY = (int) y;
+			iHit = 0;
+			jHit = 1;
 			nodesAStarSearchAndPrint();
 			neuerWegpunkt = true;
-			//System.out.println(neuerWegpunkt);
+			System.out.println("LastX: " + lastX + "LastY: " + lastY);
 		}
 		followLikeNSubscribe();	//Setzt obsX&Y auf currentCheckpoint
 		oriWink(); // Errechnet den Winkel zwischen den Orientierungen
@@ -348,14 +356,24 @@ public class MyAi extends AI{
 		// }
 	}
 
-	public void rastern() {		
+	public void rastern() {	
+		int kernelSize = 10;
 		for(int i = 0; i < arrB.length; i++) {
 			for(int j = 0; j < arrB[i].length; j++) {
 				Rectangle2D r = new Rectangle(i*cellSize, j*cellSize, cellSize, cellSize);
 				arrB[i][j] = true;
 				for (int k = 0; k < obstacles.length; k++) {
 					if (obstacles[k].intersects(r)) {
-						arrB[i][j] = false;
+						for(int n = -kernelSize; n <= kernelSize; n++) {
+							for(int m = -kernelSize; m <= kernelSize; m++) {
+								if (n+i < 0 || m+j < 0 || n+i > arrB.length-kernelSize || m+j > arrB.length-kernelSize) {
+									continue;
+								}else if(arrB[n+i][m+j] == null) {
+									continue;
+								}
+								arrB[n+i][m+j] = false;									
+							}
+						}
 						break;
 					}
 				}
@@ -375,7 +393,6 @@ public class MyAi extends AI{
 		}
         addEdges();
 		AstarSearch(nodes[startPx][startPy], nodes[endPx][endPy]);	//Pfad nimmt die Startzelle des Autos sowie die Zielzelle in der sich der Checkpoint befindet. 
-		//TODO Neue Startzelle für das Auto berechnen nachdem getCurrentCheckpoint() sich ändert.
 
         List<Node> path = printPath(nodes[endPx][endPy]);	//node[endPx][endPy]	//Test: [47][47]
 //        System.out.println();
@@ -1147,106 +1164,106 @@ public class MyAi extends AI{
 		return richtung;
 	}
 
-//	public void doDebugStuff() {
-//
-//		//Darstellung des Rasters
-//		GL11.glLineWidth(3f);
-//		GL11.glBegin(GL11.GL_LINES);
+	public void doDebugStuff() {
+
+		//Darstellung des Rasters
+		GL11.glLineWidth(1f);
+		GL11.glBegin(GL11.GL_LINES);
+		for(int i = 0; i < width; i += cellSize) {
+			for(int j = 0; j < height; j += cellSize) {
+				GL11.glColor3d(0, 0, 0);
+//				GL11.glVertex2f(i, j + 50);
+//				GL11.glVertex2f(i , j);
+//				GL11.glVertex2f(i + 50, j);
+//				GL11.glVertex2f(i + 50, j + 50);
+				GL11.glVertex2d(i, 0);
+				GL11.glVertex2d(i, height);
+				GL11.glVertex2d(0, j);
+				GL11.glVertex2d(width, j);
+			}
+		}
+		GL11.glEnd();
+		
+//		GL11.glBegin(GL11.GL_QUADS);
 //		for(int i = 0; i < width; i += cellSize) {
 //			for(int j = 0; j < height; j += cellSize) {
-//				GL11.glColor3d(0, 0, 0);
-////				GL11.glVertex2f(i, j + 50);
-////				GL11.glVertex2f(i , j);
-////				GL11.glVertex2f(i + 50, j);
-////				GL11.glVertex2f(i + 50, j + 50);
-//				GL11.glVertex2d(i, 0);
-//				GL11.glVertex2d(i, height);
-//				GL11.glVertex2d(0, j);
-//				GL11.glVertex2d(width, j);
+//				if(!arrB[i/cellSize][j/cellSize]) {
+//					GL11.glColor3d(0, 0, 1f);
+//				} else {
+//					GL11.glColor3d(1, 0, 0);
+//				}
+//				GL11.glVertex2f(i + 1, j + 1);
+//				GL11.glVertex2f(i + cellSize - 1, j + 1);
+//				GL11.glVertex2f(i + cellSize - 1, j + cellSize - 1);
+//				GL11.glVertex2f(i + 1, j + cellSize - 1);
 //			}
 //		}
 //		GL11.glEnd();
-//		
-////		GL11.glBegin(GL11.GL_QUADS);
-////		for(int i = 0; i < width; i += cellSize) {
-////			for(int j = 0; j < height; j += cellSize) {
-////				if(!arrB[i/cellSize][j/cellSize]) {
-////					GL11.glColor3d(0, 0, 1f);
-////				} else {
-////					GL11.glColor3d(1, 0, 0);
-////				}
-////				GL11.glVertex2f(i + 1, j + 1);
-////				GL11.glVertex2f(i + cellSize - 1, j + 1);
-////				GL11.glVertex2f(i + cellSize - 1, j + cellSize - 1);
-////				GL11.glVertex2f(i + 1, j + cellSize - 1);
-////			}
-////		}
-////		GL11.glEnd();
-//		
-//		//Darstellung der Kanten
-//		ArrayList<Edge> edges;
-//		int endPx = (int)(checkPX/cellSize);
-//		int endPy = (int)(checkPY/cellSize);
-//		//List<Node> path = printPath(nodes[endPx][endPy]);
-//		
-//		GL11.glBegin(GL11.GL_LINES);
-//		GL11.glColor3d(255, 255, 0);
-//		for(int i = 0 ; i < nodes.length; i++) {
-//			for(int j = 0; j < nodes.length; j++) {
-//				edges = nodes[i][j].getEdgeArr();
-//				if(edges == null) {
-//					continue;
-//				}
-//				for(Edge e : edges) {
-//					GL11.glVertex2d(nodes[i][j].nodeX, nodes[i][j].nodeY);
-//					GL11.glVertex2d(e.targetX, e.targetY);
-//				}
-//			}
-//		}
-//		GL11.glEnd();
-//		
-//		List<Node> path = printPath(nodes[endPx][endPy]);	//node[endPx][endPy]	//Test: [47][47]
-//		GL11.glBegin(GL11.GL_LINES);
-//		GL11.glColor3d(0, 0, 1);
-//		for(Node e : path) {
-//			String name = e.value;
-//	    	String[] parts = name.split(" ");
-//	    	String part1 = parts[0];
-//	    	String part2 = parts[1];
-//	    	int part1Int = Integer.parseInt(part1);
-//	    	int part2Int = Integer.parseInt(part2);
-//			GL11.glVertex2d(part1Int, part2Int);
-//		}
-//		GL11.glEnd();
-//		
-//		GL11.glBegin(GL11.GL_LINES);
-//		GL11.glColor3d(255, 0, 0);
-//		GL11.glVertex2f(info.getX(), info.getY());
-//		GL11.glVertex2d(info.getX() + Math.cos(info.getOrientation()) * 15,	info.getY() + Math.sin(info.getOrientation()) * 15);
-//		GL11.glEnd();
-//
-//		GL11.glBegin(GL11.GL_LINES);
-//		GL11.glColor3d(0, 255, 0);
-//		GL11.glVertex2f(info.getX(), info.getY());
-//		GL11.glVertex2f(obsX, obsY);
-//		GL11.glEnd();
-//
-//		GL11.glBegin(GL11.GL_LINES);
-//		GL11.glColor3d(0, 0, 255);
-//		GL11.glVertex2f(x, y);
-//		GL11.glVertex2f(x + getVelCoord.x, y + getVelCoord.y);
-//		GL11.glEnd();
-//		
-//		//Darstellung der Kollisionssensoren
-//		GL11.glBegin(GL11.GL_POINTS);
-//		GL11.glColor3d(rotM, gruenM, 0);
-//		GL11.glVertex2d(sensorMitteX, sensorMitteY); //Mitte
-//		GL11.glVertex2d(sensorLinksX, sensorLinksY); //Links
-//		GL11.glVertex2d(sensorRechtsX, sensorRechtsY); //Rechts
-//		GL11.glEnd();
-//		
-//		
-//	}
+		
+		//Darstellung der Kanten
+		ArrayList<Edge> edges;
+		int endPx = (int)(checkPX/cellSize);
+		int endPy = (int)(checkPY/cellSize);
+		//List<Node> path = printPath(nodes[endPx][endPy]);
+		
+		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(255, 255, 0);
+		for(int i = 0 ; i < nodes.length; i++) {
+			for(int j = 0; j < nodes.length; j++) {
+				edges = nodes[i][j].getEdgeArr();
+				if(edges == null) {
+					continue;
+				}
+				for(Edge e : edges) {
+					GL11.glVertex2d(nodes[i][j].nodeX, nodes[i][j].nodeY);
+					GL11.glVertex2d(e.targetX, e.targetY);
+				}
+			}
+		}
+		GL11.glEnd();
+		
+		List<Node> path = printPath(nodes[endPx][endPy]);	//node[endPx][endPy]	//Test: [47][47]
+		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(0, 0, 1);
+		for(Node e : path) {
+			String name = e.value;
+	    	String[] parts = name.split(" ");
+	    	String part1 = parts[0];
+	    	String part2 = parts[1];
+	    	int part1Int = Integer.parseInt(part1);
+	    	int part2Int = Integer.parseInt(part2);
+			GL11.glVertex2d(part1Int, part2Int);
+		}
+		GL11.glEnd();
+		
+		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(255, 0, 0);
+		GL11.glVertex2f(info.getX(), info.getY());
+		GL11.glVertex2d(info.getX() + Math.cos(info.getOrientation()) * 15,	info.getY() + Math.sin(info.getOrientation()) * 15);
+		GL11.glEnd();
+
+		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(0, 255, 0);
+		GL11.glVertex2f(info.getX(), info.getY());
+		GL11.glVertex2f(obsX, obsY);
+		GL11.glEnd();
+
+		GL11.glBegin(GL11.GL_LINES);
+		GL11.glColor3d(0, 0, 255);
+		GL11.glVertex2f(x, y);
+		GL11.glVertex2f(x + getVelCoord.x, y + getVelCoord.y);
+		GL11.glEnd();
+		
+		//Darstellung der Kollisionssensoren
+		GL11.glBegin(GL11.GL_POINTS);
+		GL11.glColor3d(rotM, gruenM, 0);
+		GL11.glVertex2d(sensorMitteX, sensorMitteY); //Mitte
+		GL11.glVertex2d(sensorLinksX, sensorLinksY); //Links
+		GL11.glVertex2d(sensorRechtsX, sensorRechtsY); //Rechts
+		GL11.glEnd();
+		
+		
+	}
 
 	public float atan2Vector(double ax, double ay, double bx, double by) {
 		float zielCoordY;
