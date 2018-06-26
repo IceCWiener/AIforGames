@@ -215,11 +215,13 @@ public class MyAI extends AI{
 	public void addEdges() {
 		int kernelSize = 1;
 		int counter = 0;
-		int edgeNum = 4;
+		int edgeNum = 8;
+		double cellAbstand;
+		double diag = Math.sqrt(2*cellSize);
 		ArrayList<Edge> edges;
 		
 		for(int i = 0; i < nodes.length; i++) {
-			for(int j = 0; j < nodes.length; j++) {
+			for(int j = 0; j < nodes[i].length; j++) {
 				
 				nodes[i][j].adjacencies = new ArrayList<Edge>();
 				
@@ -229,14 +231,18 @@ public class MyAI extends AI{
 							if (counter == edgeNum) {
 								counter = 0;
 							}
-							if ((k == 0) ^ (h == 0)) {
+							if (!(k == 0) && !(h == 0)) {
+								cellAbstand = diag;
+								if ((k == 0) ^ (h == 0)) {
+									cellAbstand = cellSize;
+								}
 								if (i + k < 0 || j + h < 0 || i + k > nodes.length - 1 || j + h > nodes.length - 1) {
 									continue;
 								} else if (arrB[i + k][j + h]) {
 //									if (arrB[i + k][j + h] == null) {
 //										continue;
 //									}
-									nodes[i][j].adjacencies.add(new Edge(nodes[i + k][j + h], cellSize));
+									nodes[i][j].adjacencies.add(new Edge(nodes[i + k][j + h], cellAbstand));
 									//System.out.println(" Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Edgetarget: " + nodes[i][j].adjacencies[counter].targetX + "-" + nodes[i][j].adjacencies[counter].targetY);
 									//System.out.println("Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Target: " + nodes[i+k][j+h].nodeX + "-" + nodes[i+k][j+h].nodeY);
 									counter++;
@@ -327,7 +333,17 @@ public class MyAI extends AI{
 			for (Edge e : edges) {
 				Node child = e.target;
 				
-				e.cost = e.cost - abstand(e.targetX, e.targetY, checkPX, checkPY);
+				//SlowFast-Gewichtung
+				float gewicht;
+				if(!slow[(int) e.targetX/cellSize][(int) e.targetY/cellSize]) {
+					gewicht = 4;
+				} else if(!fast[(int) e.targetX/cellSize][(int) e.targetY/cellSize]) {
+					gewicht = 0.5f;
+				} else {
+					gewicht = 1;
+				}
+				
+				e.cost = e.cost - abstand(e.targetX, e.targetY, checkPX, checkPY) * gewicht;
 				
 				double temp_g_scores = current.g_scores + e.cost;
 				double temp_f_scores = temp_g_scores + child.h_scores;
@@ -376,8 +392,8 @@ public class MyAI extends AI{
 		for (int i = 0; i < arrB.length; i++) {
 			for (int j = 0; j < arrB[i].length; j++) {
 				arrB[i][j] = true;
-				//slow[i][j] = true;
-				//fast[i][j] = true;
+				slow[i][j] = true;
+				fast[i][j] = true;
 			}
 		}
 		for (int i = 0; i < arrB.length; i++) {
@@ -387,8 +403,8 @@ public class MyAI extends AI{
 					if (obstacles[k].intersects(r)) {
 						for (int n = -kernelSize; n <= kernelSize; n++) {
 							for (int m = -kernelSize; m <= kernelSize; m++) {
-								if (n + i < 0 || m + j < 0 || n + i > arrB.length
-										|| m + j > arrB.length) {
+								if (n + i < 0 || m + j < 0 || n + i >= arrB.length
+										|| m + j >= arrB[i].length) {
 									continue;
 								}
 								// else if(arrB[n+i][m+j] == null) {
@@ -402,8 +418,58 @@ public class MyAI extends AI{
 				}
 			}
 		}
+		
 		//Berechnung der Slow/Fast-Zones
+		//FastZones
+		for (int i = 0; i < arrB.length; i++) {
+			for (int j = 0; j < arrB[i].length; j++) {
+				Rectangle2D r = new Rectangle(i * cellSize, j * cellSize, cellSize, cellSize);
+				for (int k = 0; k < fastArr.length; k++) {
+					if (fastArr[k].intersects(r)) {
+//						for (int n = -kernelSize; n <= kernelSize; n++) {
+//							for (int m = -kernelSize; m <= kernelSize; m++) {
+//								if (n + i < 0 || m + j < 0 || n + i >= arrB.length
+//										|| m + j >= arrB[i].length) {
+//									continue;
+//								}
+//								// else if(arrB[n+i][m+j] == null) {
+//								// continue;
+//								// }
+//								arrB[n + i][m + j] = false;
+//							}
+//						}
+						fast[i][j] = false;
+						break;
+					}
+				}
+			}
+		}
+		
 		//SlowZones:
+		for (int i = 0; i < arrB.length; i++) {
+			for (int j = 0; j < arrB[i].length; j++) {
+				Rectangle2D r = new Rectangle(i * cellSize, j * cellSize, cellSize, cellSize);
+				for (int k = 0; k < slowArr.length; k++) {
+					if (slowArr[k].intersects(r)) {
+//						for (int n = -kernelSize; n <= kernelSize; n++) {
+//							for (int m = -kernelSize; m <= kernelSize; m++) {
+//								if (n + i < 0 || m + j < 0 || n + i >= arrB.length
+//										|| m + j >= arrB[i].length) {
+//									continue;
+//								}
+//								// else if(arrB[n+i][m+j] == null) {
+//								// continue;
+//								// }
+//								arrB[n + i][m + j] = false;
+//							}
+//						}
+						slow[i][j] = false;
+						break;
+					}
+				}
+			}
+		}
+		
 //		for(Polygon p : slowArr) {
 //			int[] x = p.xpoints;
 //			int[] y = p.ypoints;
@@ -415,14 +481,16 @@ public class MyAI extends AI{
 //			}
 //		}
 		
-		for (int j = (int) (height/cellSize-1); j > 0; j--) {
-			for (int i = 0; i < width/cellSize-1; i++) {
-				//System.out.print(arrB[i][j] ? "." : "+");
-				if(arrB[i][j] && slow[i][j]) {
+		for (int j = (int) (height / cellSize - 1); j > 0; j--) {
+			for (int i = 0; i < width / cellSize - 1; i++) {
+				// System.out.print(arrB[i][j] ? "." : "+");
+				if (arrB[i][j] && slow[i][j] && fast[i][j]) {
 					System.out.print(".");
-				} else if(!arrB[i][j] && !slow[i][j]) {
-					System.out.print("s");
-				} else {
+				} else if (!slow[i][j]) {
+					System.out.print("´");
+				} else if (!fast[i][j]) {
+					System.out.print(",");
+				} else if (!arrB[i][j]) {
 					System.out.print("+");
 				}
 			}
@@ -434,7 +502,7 @@ public class MyAI extends AI{
 		int endPx = (int)(checkPX/cellSize);
 		int endPy = (int)(checkPY/cellSize);
 		for(int i = 0; i < arrB.length; i++) {
-			for(int j = 0; j < arrB.length; j++) {
+			for(int j = 0; j < arrB[i].length; j++) {
 				nodeGenerator(i, j);
 			}
 		}
@@ -1191,11 +1259,13 @@ public class MyAI extends AI{
 		float curCheY = (float) info.getCurrentCheckpoint().getY();
 		bremsWinkel = 0.6f;
 		bremsRadius = 30;
+		int umLenk = 40;
 		
-		if(abstand(x,y,curCheX,curCheY) < 40) {
-			//bremsWinkel = 0.6f;
+		if(abstand(x,y,curCheX, curCheY) < umLenk) {
+			//bremsWinkel = ...
 			bremsRadius = 15;
 		}
+		
 		
 		if(rotZielAbsWinkel < toleranz){
 			wunschDrehGeschw = 0;
@@ -1265,11 +1335,11 @@ public class MyAI extends AI{
 		GL11.glBegin(GL11.GL_LINES);
 		GL11.glColor3d(255, 255, 0);
 		for(int i = 0 ; i < nodes.length; i++) {
-			for(int j = 0; j < nodes.length; j++) {
+			for(int j = 0; j < nodes[i].length; j++) {
 				edges = nodes[i][j].getEdgeArr();
-				if(edges == null) {
-					continue;
-				}
+//				if(edges == null) {
+//					continue;
+//				}
 				for(Edge e : edges) {
 					GL11.glVertex2d(nodes[i][j].nodeX, nodes[i][j].nodeY);
 					GL11.glVertex2d(e.targetX, e.targetY);
@@ -1278,19 +1348,20 @@ public class MyAI extends AI{
 		}
 		GL11.glEnd();
 		
-//		List<Node> path = printPath(nodes[endPx][endPy]);	//node[endPx][endPy]	//Test: [47][47]
-//		GL11.glBegin(GL11.GL_LINES);
-//		GL11.glColor3d(0, 0, 1);
-//		for(Node e : path) {
-//			String name = e.value;
-//	    	String[] parts = name.split(" ");
-//	    	String part1 = parts[0];
-//	    	String part2 = parts[1];
-//	    	int part1Int = Integer.parseInt(part1);
-//	    	int part2Int = Integer.parseInt(part2);
-//			GL11.glVertex2d(part1Int, part2Int);
-//		}
-//		GL11.glEnd();
+		GL11.glLineWidth(3f);
+		List<Node> path = printPath(nodes[endPx][endPy]);	//node[endPx][endPy]	//Test: [47][47]
+		GL11.glBegin(GL11.GL_LINE_LOOP);
+		GL11.glColor3d(0, 0, 1);
+		for(Node e : path) {
+			String name = e.value;
+	    	String[] parts = name.split(" ");
+	    	String part1 = parts[0];
+	    	String part2 = parts[1];
+	    	int part1Int = Integer.parseInt(part1);
+	    	int part2Int = Integer.parseInt(part2);
+			GL11.glVertex2d(part1Int*cellSize+cellSize/2, part2Int*cellSize+cellSize/2);
+		}
+		GL11.glEnd();
 		
 		GL11.glBegin(GL11.GL_LINES);
 		GL11.glColor3d(255, 0, 0);
@@ -1365,51 +1436,51 @@ public class MyAI extends AI{
 		}
 	}
 }
-//class Node{
-//
-//    public final String value;
-//    public double g_scores;
-//    public final double h_scores;
-//    public double f_scores = 0;
-//    public ArrayList<Edge> adjacencies;
-//    public Node parent;
-//    public float nodeX;
-//    public float nodeY;
-//
-//    public Node(String val, double hVal){
-//            value = val;
-//            h_scores = hVal;
-//            String name = value;
-//        	String[] parts = name.split(" ");
-//        	String part1 = parts[0];
-//        	String part2 = parts[1];
-//        	this.nodeX= Float.parseFloat(part1) * MyAI.cellSize + MyAI.cellSize/2;
-//        	this.nodeY = Float.parseFloat(part2) * MyAI.cellSize + MyAI.cellSize/2;
-//            
-//    }
-//    
-//    public ArrayList<Edge> getEdgeArr() {
-//    	ArrayList<Edge> edges = (ArrayList) adjacencies.clone();
-//    	return edges;
-//    }
-//
-//    public String toString(){
-//            return value;
-//    }
-//
-//}
-//
-//class Edge{
-//    public double cost;
-//    public final Node target;
-//    public float targetX;
-//    public float targetY;
-//
-//    public Edge(Node targetNode, double costVal){
-//            target = targetNode;
-//            cost = costVal;
-//            this.targetX = targetNode.nodeX;
-//            this.targetY = targetNode.nodeY;
-//            //System.out.println(" Source: " + target.nodeX + "-" + target.nodeY + " | "  + "Target: " + targetX + "-" + targetY + " ");
-//    }
-//}
+class Node{
+
+    public final String value;
+    public double g_scores;
+    public final double h_scores;
+    public double f_scores = 0;
+    public ArrayList<Edge> adjacencies;
+    public Node parent;
+    public float nodeX;
+    public float nodeY;
+
+    public Node(String val, double hVal){
+            value = val;
+            h_scores = hVal;
+            String name = value;
+        	String[] parts = name.split(" ");
+        	String part1 = parts[0];
+        	String part2 = parts[1];
+        	this.nodeX= Float.parseFloat(part1) * MyAI.cellSize + MyAI.cellSize/2;
+        	this.nodeY = Float.parseFloat(part2) * MyAI.cellSize + MyAI.cellSize/2;
+            
+    }
+    
+    public ArrayList<Edge> getEdgeArr() {
+    	ArrayList<Edge> edges = (ArrayList) adjacencies.clone();
+    	return edges;
+    }
+
+    public String toString(){
+            return value;
+    }
+
+}
+
+class Edge{
+    public double cost;
+    public final Node target;
+    public float targetX;
+    public float targetY;
+
+    public Edge(Node targetNode, double costVal){
+            target = targetNode;
+            cost = costVal;
+            this.targetX = targetNode.nodeX;
+            this.targetY = targetNode.nodeY;
+            //System.out.println(" Source: " + target.nodeX + "-" + target.nodeY + " | "  + "Target: " + targetX + "-" + targetY + " ");
+    }
+}
