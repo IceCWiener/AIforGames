@@ -1187,6 +1187,15 @@ public class MyAI extends AI{
 		float richtung;
 		float wunschDrehGeschw = 0;
 		float zielWeg = abstand(x,y,obsX,obsY);
+		float curCheX = (float) info.getCurrentCheckpoint().getX();
+		float curCheY = (float) info.getCurrentCheckpoint().getY();
+		bremsWinkel = 0.6f;
+		bremsRadius = 30;
+		
+		if(abstand(x,y,curCheX,curCheY) < 40) {
+			//bremsWinkel = 0.6f;
+			bremsRadius = 15;
+		}
 		
 		if(rotZielAbsWinkel < toleranz){
 			wunschDrehGeschw = 0;
@@ -1356,51 +1365,51 @@ public class MyAI extends AI{
 		}
 	}
 }
-class Node{
-
-    public final String value;
-    public double g_scores;
-    public final double h_scores;
-    public double f_scores = 0;
-    public ArrayList<Edge> adjacencies;
-    public Node parent;
-    public float nodeX;
-    public float nodeY;
-
-    public Node(String val, double hVal){
-            value = val;
-            h_scores = hVal;
-            String name = value;
-        	String[] parts = name.split(" ");
-        	String part1 = parts[0];
-        	String part2 = parts[1];
-        	this.nodeX= Float.parseFloat(part1) * MyAI.cellSize + MyAI.cellSize/2;
-        	this.nodeY = Float.parseFloat(part2) * MyAI.cellSize + MyAI.cellSize/2;
-            
-    }
-    
-    public ArrayList<Edge> getEdgeArr() {
-    	ArrayList<Edge> edges = (ArrayList) adjacencies.clone();
-    	return edges;
-    }
-
-    public String toString(){
-            return value;
-    }
-
-}
-
-class Edge{
-    public double cost;
-    public final Node target;
-    public float targetX;
-    public float targetY;
-
-    public Edge(Node targetNode, double costVal){
-            target = targetNode;
-            cost = costVal;
-            this.targetX = targetNode.nodeX;
-            this.targetY = targetNode.nodeY;
-            //System.out.println(" Source: " + target.nodeX + "-" + target.nodeY + " | "  + "Target: " + targetX + "-" + targetY + " ");
-    }
-}
+//class Node{
+//
+//    public final String value;
+//    public double g_scores;
+//    public final double h_scores;
+//    public double f_scores = 0;
+//    public ArrayList<Edge> adjacencies;
+//    public Node parent;
+//    public float nodeX;
+//    public float nodeY;
+//
+//    public Node(String val, double hVal){
+//            value = val;
+//            h_scores = hVal;
+//            String name = value;
+//        	String[] parts = name.split(" ");
+//        	String part1 = parts[0];
+//        	String part2 = parts[1];
+//        	this.nodeX= Float.parseFloat(part1) * MyAI.cellSize + MyAI.cellSize/2;
+//        	this.nodeY = Float.parseFloat(part2) * MyAI.cellSize + MyAI.cellSize/2;
+//            
+//    }
+//    
+//    public ArrayList<Edge> getEdgeArr() {
+//    	ArrayList<Edge> edges = (ArrayList) adjacencies.clone();
+//    	return edges;
+//    }
+//
+//    public String toString(){
+//            return value;
+//    }
+//
+//}
+//
+//class Edge{
+//    public double cost;
+//    public final Node target;
+//    public float targetX;
+//    public float targetY;
+//
+//    public Edge(Node targetNode, double costVal){
+//            target = targetNode;
+//            cost = costVal;
+//            this.targetX = targetNode.nodeX;
+//            this.targetY = targetNode.nodeY;
+//            //System.out.println(" Source: " + target.nodeX + "-" + target.nodeY + " | "  + "Target: " + targetX + "-" + targetY + " ");
+//    }
+//}
