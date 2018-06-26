@@ -103,12 +103,15 @@ public class MyAI extends AI{
 	float height;
 	
 	//Rastervariablen
-	static int cellSize = 5; // orig = 20
+	static int cellSize = 15; // orig = 5
 	public int checkPRadius = 25; //orig = 25
 	int nextCell = 25;
-	int abstandsKernel = 3;
+	int abstandsKernel = 1; //orig = 3
 	
 	boolean arrB[][];
+	boolean slow[][];
+	boolean fast[][];
+	
 	int w;
 	int h;
 	boolean raster = false;
@@ -145,6 +148,8 @@ public class MyAI extends AI{
 		maxVel = info.getMaxVelocity(); // Maximale Geschwindigkeit ist 28.0
 		maxTurnSpeed = info.getMaxAngularVelocity(); // 1.5
 		arrB = new boolean[(int) width/cellSize][(int) height/cellSize];
+		slow = new boolean[(int) width/cellSize][(int) height/cellSize];
+		fast = new boolean[(int) width/cellSize][(int) height/cellSize];
 		nodes = new Node[(int) width/cellSize][(int) height/cellSize];
 		rastern();
 		lastX = (int) x;
@@ -366,34 +371,62 @@ public class MyAI extends AI{
 		// }
 	}
 
-	public void rastern() {	
+	public void rastern() {
 		int kernelSize = abstandsKernel;
-		for(int i = 0; i < arrB.length; i++) {
-			for(int j = 0; j < arrB[i].length; j++) {
+		for (int i = 0; i < arrB.length; i++) {
+			for (int j = 0; j < arrB[i].length; j++) {
 				arrB[i][j] = true;
-}}
-				for(int i = 0; i < arrB.length; i++) {
-			for(int j = 0; j < arrB[i].length; j++) {
-				Rectangle2D r = new Rectangle(i*cellSize, j*cellSize, cellSize, cellSize);
+				//slow[i][j] = true;
+				//fast[i][j] = true;
+			}
+		}
+		for (int i = 0; i < arrB.length; i++) {
+			for (int j = 0; j < arrB[i].length; j++) {
+				Rectangle2D r = new Rectangle(i * cellSize, j * cellSize, cellSize, cellSize);
 				for (int k = 0; k < obstacles.length; k++) {
 					if (obstacles[k].intersects(r)) {
-						for(int n = -kernelSize; n <= kernelSize; n++) {
-							for(int m = -kernelSize; m <= kernelSize; m++) {
-								if (n+i < 0 || m+j < 0 || n+i > arrB.length-kernelSize || m+j > arrB.length-kernelSize) {
+						for (int n = -kernelSize; n <= kernelSize; n++) {
+							for (int m = -kernelSize; m <= kernelSize; m++) {
+								if (n + i < 0 || m + j < 0 || n + i > arrB.length
+										|| m + j > arrB.length) {
 									continue;
 								}
-//									else if(arrB[n+i][m+j] == null) {
-//									continue;
-//								}
-								arrB[n+i][m+j] = false;									
+								// else if(arrB[n+i][m+j] == null) {
+								// continue;
+								// }
+								arrB[n + i][m + j] = false;
 							}
 						}
 						break;
 					}
 				}
-				System.out.print(arrB[i][j]?".":"+");
 			}
-			System.out.println();
+		}
+		//Berechnung der Slow/Fast-Zones
+		//SlowZones:
+//		for(Polygon p : slowArr) {
+//			int[] x = p.xpoints;
+//			int[] y = p.ypoints;
+//			
+//			for(int i = 0; i < x.length; i++) {
+//				for(int j = 0; j < y.length; j++) {
+//					slow[x[i]/cellSize][y[j]/cellSize] = false;
+//				}
+//			}
+//		}
+		
+		for (int j = (int) (height/cellSize-1); j > 0; j--) {
+			for (int i = 0; i < width/cellSize-1; i++) {
+				//System.out.print(arrB[i][j] ? "." : "+");
+				if(arrB[i][j] && slow[i][j]) {
+					System.out.print(".");
+				} else if(!arrB[i][j] && !slow[i][j]) {
+					System.out.print("s");
+				} else {
+					System.out.print("+");
+				}
+			}
+			System.out.println("");
 		}
 	}
 
