@@ -263,12 +263,20 @@ public class MyAI extends AI{
 		boolean collision = true;
 		
 		for (Node node = target; node != null; node = node.parent) {
+			path.add(node);		
+		}
+
+		Collections.reverse(path);
+		
+		for (Node node = target; node != null; node = node.parent) {
 			
 			line.setLine(x, y, node.nodeX, node.nodeY);
-			path.add(node);
 			
 			if(!collision) {
 				node.parent = null;
+			} else {
+				path.add(node);
+				
 			}
 			
 			for(Polygon p : obstacles) {
@@ -281,7 +289,6 @@ public class MyAI extends AI{
 			}
 		}
 
-		Collections.reverse(path);
 		pathInts.clear();
 		for (Node e : path) {
 			intPathConverter(e);
