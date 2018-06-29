@@ -103,10 +103,10 @@ public class MyAI extends AI{
 	float height;
 	
 	//Rastervariablen
-	static int cellSize = 15; // orig = 5
+	static int cellSize = 5; // orig = 5
 	public int checkPRadius = 25; //orig = 25
 	int nextCell = 25;
-	int abstandsKernel = 1; //orig = 3
+	int abstandsKernel = 5; //orig = 3
 	
 	boolean arrB[][];
 	boolean slow[][];
@@ -172,6 +172,12 @@ public class MyAI extends AI{
 		getVelCoord = info.getVelocity();
 		getVel = (float) Math.sqrt(Math.pow(getVelCoord.x, 2) + Math.pow(getVelCoord.y, 2)); 
 		turnSpeed = info.getAngularVelocity();
+		
+		if(wasResetAfterCollision == true){
+			followLikeNSubscribe();
+			iHit = 0;
+			jHit = 1;
+		}
 
 		//collisionDetect();	//Sensoren erkennen Berührung
 		//wegpunktMethode();	//Auswahl der richtigen Wegfindungsmethode
@@ -214,59 +220,65 @@ public class MyAI extends AI{
 
 	public void addEdges() {
 		int kernelSize = 1;
-		int counter = 0;
-		int edgeNum = 8;
-		double cellAbstand;
-		double diag = Math.sqrt(2*cellSize);
+		double cellAbstand = cellSize;
+		double diag = Math.sqrt(2 * cellSize);
 		ArrayList<Edge> edges;
-		
-		for(int i = 0; i < nodes.length; i++) {
-			for(int j = 0; j < nodes[i].length; j++) {
-				
+
+		for (int i = 0; i < nodes.length; i++) {
+			for (int j = 0; j < nodes[i].length; j++) {
+
 				nodes[i][j].adjacencies = new ArrayList<Edge>();
-				
+
 				if (arrB[i][j]) {
 					for (int k = -kernelSize; k <= kernelSize; k++) {
 						for (int h = -kernelSize; h <= kernelSize; h++) {
-							if (counter == edgeNum) {
-								counter = 0;
+
+							cellAbstand = diag;
+							if ((k == 0) ^ (h == 0)) {
+								cellAbstand = cellSize;
 							}
-							if (!(k == 0) && !(h == 0)) {
-								cellAbstand = diag;
-								if ((k == 0) ^ (h == 0)) {
-									cellAbstand = cellSize;
-								}
-								if (i + k < 0 || j + h < 0 || i + k > nodes.length - 1 || j + h > nodes.length - 1) {
-									continue;
-								} else if (arrB[i + k][j + h]) {
-//									if (arrB[i + k][j + h] == null) {
-//										continue;
-//									}
-									nodes[i][j].adjacencies.add(new Edge(nodes[i + k][j + h], cellAbstand));
-									//System.out.println(" Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Edgetarget: " + nodes[i][j].adjacencies[counter].targetX + "-" + nodes[i][j].adjacencies[counter].targetY);
-									//System.out.println("Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Target: " + nodes[i+k][j+h].nodeX + "-" + nodes[i+k][j+h].nodeY);
-									counter++;
-								}
+							if (i + k < 0 || j + h < 0 || i + k > nodes.length - 1 || j + h > nodes[i].length - 1) {
+								continue;
+							} else if (arrB[i + k][j + h]) {
+
+								nodes[i][j].adjacencies.add(new Edge(nodes[i + k][j + h], cellAbstand));
+
 							}
+
 						}
-					} 
+					}
 				}
 				edges = nodes[i][j].getEdgeArr();
-				if(nodes[i][j].adjacencies == null || edges == null) {
+				if (nodes[i][j].adjacencies == null || edges == null) {
 					continue;
 				}
-//				for(Edge e : edges){
-//					System.out.println("Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Target: " + e.targetX + "-" + e.targetY);
-//				}
+
 			}
 		}
 	}
 
 	public List<Node> printPath(Node target) {
 		List<Node> path = new ArrayList<Node>();
-
+		Line2D line = new Line2D.Float();
+		boolean collision = true;
+		
 		for (Node node = target; node != null; node = node.parent) {
+			
+			line.setLine(x, y, node.nodeX, node.nodeY);
 			path.add(node);
+			
+			if(!collision) {
+				node.parent = null;
+			}
+			
+			for(Polygon p : obstacles) {
+				if(p.getBounds2D().intersects(line.getBounds2D())) {
+					collision = true;
+					break;
+				} else {
+					collision = false;
+				}
+			}
 		}
 
 		Collections.reverse(path);
@@ -369,22 +381,11 @@ public class MyAI extends AI{
 					if (!queue.contains(child)) {
 						queue.add(child);
 					}
-					//System.out.println("Child: " + child);
-
 				}
 
 			}
 
 		}
-		// System.out.println();
-		// System.out.println("queue:");
-		// for(Node n : queue) {
-		// System.out.print(n);
-		// }
-		// System.out.println("explored:");
-		// for(Node n : explored) {
-		// System.out.print(n);
-		// }
 	}
 
 	public void rastern() {
@@ -426,18 +427,6 @@ public class MyAI extends AI{
 				Rectangle2D r = new Rectangle(i * cellSize, j * cellSize, cellSize, cellSize);
 				for (int k = 0; k < fastArr.length; k++) {
 					if (fastArr[k].intersects(r)) {
-//						for (int n = -kernelSize; n <= kernelSize; n++) {
-//							for (int m = -kernelSize; m <= kernelSize; m++) {
-//								if (n + i < 0 || m + j < 0 || n + i >= arrB.length
-//										|| m + j >= arrB[i].length) {
-//									continue;
-//								}
-//								// else if(arrB[n+i][m+j] == null) {
-//								// continue;
-//								// }
-//								arrB[n + i][m + j] = false;
-//							}
-//						}
 						fast[i][j] = false;
 						break;
 					}
@@ -451,36 +440,13 @@ public class MyAI extends AI{
 				Rectangle2D r = new Rectangle(i * cellSize, j * cellSize, cellSize, cellSize);
 				for (int k = 0; k < slowArr.length; k++) {
 					if (slowArr[k].intersects(r)) {
-//						for (int n = -kernelSize; n <= kernelSize; n++) {
-//							for (int m = -kernelSize; m <= kernelSize; m++) {
-//								if (n + i < 0 || m + j < 0 || n + i >= arrB.length
-//										|| m + j >= arrB[i].length) {
-//									continue;
-//								}
-//								// else if(arrB[n+i][m+j] == null) {
-//								// continue;
-//								// }
-//								arrB[n + i][m + j] = false;
-//							}
-//						}
 						slow[i][j] = false;
 						break;
 					}
 				}
 			}
 		}
-		
-//		for(Polygon p : slowArr) {
-//			int[] x = p.xpoints;
-//			int[] y = p.ypoints;
-//			
-//			for(int i = 0; i < x.length; i++) {
-//				for(int j = 0; j < y.length; j++) {
-//					slow[x[i]/cellSize][y[j]/cellSize] = false;
-//				}
-//			}
-//		}
-		
+				
 		for (int j = (int) (height / cellSize - 1); j > 0; j--) {
 			for (int i = 0; i < width / cellSize - 1; i++) {
 				// System.out.print(arrB[i][j] ? "." : "+");
@@ -1332,21 +1298,21 @@ public class MyAI extends AI{
 		int endPy = (int)(checkPY/cellSize);
 		//List<Node> path = printPath(nodes[endPx][endPy]);
 		
-		GL11.glBegin(GL11.GL_LINES);
-		GL11.glColor3d(255, 255, 0);
-		for(int i = 0 ; i < nodes.length; i++) {
-			for(int j = 0; j < nodes[i].length; j++) {
-				edges = nodes[i][j].getEdgeArr();
-//				if(edges == null) {
-//					continue;
+//		GL11.glBegin(GL11.GL_LINES);
+//		GL11.glColor3d(255, 255, 0);
+//		for(int i = 0 ; i < nodes.length; i++) {
+//			for(int j = 0; j < nodes[i].length; j++) {
+//				edges = nodes[i][j].getEdgeArr();
+////				if(edges == null) {
+////					continue;
+////				}
+//				for(Edge e : edges) {
+//					GL11.glVertex2d(nodes[i][j].nodeX, nodes[i][j].nodeY);
+//					GL11.glVertex2d(e.targetX, e.targetY);
 //				}
-				for(Edge e : edges) {
-					GL11.glVertex2d(nodes[i][j].nodeX, nodes[i][j].nodeY);
-					GL11.glVertex2d(e.targetX, e.targetY);
-				}
-			}
-		}
-		GL11.glEnd();
+//			}
+//		}
+//		GL11.glEnd();
 		
 		GL11.glLineWidth(3f);
 		List<Node> path = printPath(nodes[endPx][endPy]);	//node[endPx][endPy]	//Test: [47][47]
@@ -1436,6 +1402,7 @@ public class MyAI extends AI{
 		}
 	}
 }
+
 class Node{
 
     public final String value;
