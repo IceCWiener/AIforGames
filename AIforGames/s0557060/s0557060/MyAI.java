@@ -103,10 +103,10 @@ public class MyAI extends AI{
 	float height;
 	
 	//Rastervariablen
-	static int cellSize = 5; // orig = 5
+	static int cellSize = 15; // orig = 5
 	public int checkPRadius = 25; //orig = 25
 	int nextCell = 25;
-	int abstandsKernel = 5; //orig = 3
+	int abstandsKernel = 1; //orig = 3
 	
 	boolean arrB[][];
 	boolean slow[][];
@@ -195,6 +195,7 @@ public class MyAI extends AI{
 			neuerWegpunkt = true;
 			//System.out.println("LastX: " + lastX + "LastY: " + lastY);
 		}
+		List<Node> path = printPath(nodes[(int) (checkPX/cellSize)][(int) (checkPY/cellSize)]);
 		followLikeNSubscribe();	//Setzt obsX&Y auf currentCheckpoint
 		oriWink(); // Errechnet den Winkel zwischen den Orientierungen
 		//oriWinkCP();
@@ -279,6 +280,15 @@ public class MyAI extends AI{
 				
 			}
 			
+			for(Polygon p : slowArr) {
+				if(p.getBounds2D().intersects(line.getBounds2D())) {
+					collision = true;
+					break;
+				} else {
+					collision = false;
+				}
+			}
+			
 			for(Polygon p : obstacles) {
 				if(p.getBounds2D().intersects(line.getBounds2D())) {
 					collision = true;
@@ -287,13 +297,15 @@ public class MyAI extends AI{
 					collision = false;
 				}
 			}
+			
 		}
 
 		pathInts.clear();
 		for (Node e : path) {
 			intPathConverter(e);
 		}
-		points = new int[pathInts.size()];
+		points = null;
+		points = new int[pathInts.size()]; 
 		//System.out.println("PathSize:" + pathInts.size());
 		for (int j = 0; j < pathInts.size(); j++) {
 			points[j] = pathInts.get(j);
@@ -482,14 +494,14 @@ public class MyAI extends AI{
         addEdges();
 		AstarSearch(nodes[startPx][startPy], nodes[endPx][endPy]);	//Pfad nimmt die Startzelle des Autos sowie die Zielzelle in der sich der Checkpoint befindet. 
 
-        List<Node> path = printPath(nodes[endPx][endPy]);	//node[endPx][endPy]	//Test: [47][47]
+//        List<Node> path = printPath(nodes[endPx][endPy]);
 //        System.out.println();
 //        System.out.println("Path: " + path);
 //        System.out.println("Ints: " + pathInts);
 //        System.out.print("Points:");
-        for(int i = 0; i < points.length; i+=2) {
-        	//System.out.print(points[i] + " " + points[i+1] + ", ");
-        }
+//        for(int i = 0; i < points.length; i+=2) {
+//        	//System.out.print(points[i] + " " + points[i+1] + ", ");
+//        }
         //System.out.println("selbstgeschriebener Weg" + pathInts);
 	}
 	
@@ -505,7 +517,7 @@ public class MyAI extends AI{
 			
 			obsX = points[iHit] * cellSize + cellSize/2;
 			obsY = points[jHit] * cellSize + cellSize/2;
-			if(abstand( x, y, obsX, obsY) < nextCell && jHit < pathInts.size()-2) {
+			if(abstand( x, y, obsX, obsY) < nextCell && jHit < pathInts.size()-4) {
 					iHit += 2;
 					jHit += 2;
 			}
