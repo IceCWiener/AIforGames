@@ -103,10 +103,10 @@ public class MyAI extends AI{
 	float height;
 	
 	//Rastervariablen
-	static int cellSize = 15; // orig = 5
+	static int cellSize = 5; // orig = 5
 	public int checkPRadius = 25; //orig = 25
 	int nextCell = 25;
-	int abstandsKernel = 1; //orig = 3
+	int abstandsKernel = 3; //orig = 3
 	
 	boolean arrB[][];
 	boolean slow[][];
@@ -195,7 +195,13 @@ public class MyAI extends AI{
 			neuerWegpunkt = true;
 			//System.out.println("LastX: " + lastX + "LastY: " + lastY);
 		}
-		List<Node> path = printPath(nodes[(int) (checkPX/cellSize)][(int) (checkPY/cellSize)]);
+		
+		if (obstacles.length >= 20) {
+			List<Node> path = printPath31(nodes[(int) (checkPX / cellSize)][(int) (checkPY / cellSize)]);
+		} else {
+			List<Node> path = printPath(nodes[(int) (checkPX / cellSize)][(int) (checkPY / cellSize)]);
+		}
+		
 		followLikeNSubscribe();	//Setzt obsX&Y auf currentCheckpoint
 		oriWink(); // Errechnet den Winkel zwischen den Orientierungen
 		//oriWinkCP();
@@ -219,7 +225,7 @@ public class MyAI extends AI{
     	return x;
     }
 
-	public void addEdges() {
+	public void addEdgesDiag() {
 		int kernelSize = 1;
 		double cellAbstand = cellSize;
 		double diag = Math.sqrt(2 * cellSize);
@@ -257,8 +263,72 @@ public class MyAI extends AI{
 			}
 		}
 	}
+	
+	public void addEdges() {
+		int kernelSize = 1;
+		int counter = 0;
+		int edgeNum = 4;
+		ArrayList<Edge> edges;
+		
+		for(int i = 0; i < nodes.length; i++) {
+			for(int j = 0; j < nodes.length; j++) {
+				
+				nodes[i][j].adjacencies = new ArrayList<Edge>();
+				
+				if (arrB[i][j]) {
+					for (int k = -kernelSize; k <= kernelSize; k++) {
+						for (int h = -kernelSize; h <= kernelSize; h++) {
+							if (counter == edgeNum) {
+								counter = 0;
+							}
+							if ((k == 0) ^ (h == 0)) {
+								if (i + k < 0 || j + h < 0 || i + k > nodes.length - 1 || j + h > nodes.length - 1) {
+									continue;
+								} else if (arrB[i + k][j + h]) {
+//									if (arrB[i + k][j + h] == null) {
+//										continue;
+//									}
+									nodes[i][j].adjacencies.add(new Edge(nodes[i + k][j + h], cellSize));
+									//System.out.println(" Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Edgetarget: " + nodes[i][j].adjacencies[counter].targetX + "-" + nodes[i][j].adjacencies[counter].targetY);
+									//System.out.println("Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Target: " + nodes[i+k][j+h].nodeX + "-" + nodes[i+k][j+h].nodeY);
+									counter++;
+								}
+							}
+						}
+					} 
+				}
+				edges = nodes[i][j].getEdgeArr();
+				if(nodes[i][j].adjacencies == null || edges == null) {
+					continue;
+				}
+//				for(Edge e : edges){
+//					System.out.println("Source: " + nodes[i][j].nodeX + "-" + nodes[i][j].nodeY + " Target: " + e.targetX + "-" + e.targetY);
+//				}
+			}
+		}
+	}
 
 	public List<Node> printPath(Node target) {
+		List<Node> path = new ArrayList<Node>();
+
+		for (Node node = target; node != null; node = node.parent) {
+			path.add(node);
+		}
+
+		Collections.reverse(path);
+		pathInts.clear();
+		for (Node e : path) {
+			intPathConverter(e);
+		}
+		points = new int[pathInts.size()];
+		//System.out.println("PathSize:" + pathInts.size());
+		for (int j = 0; j < pathInts.size(); j++) {
+			points[j] = pathInts.get(j);
+		}
+		return path;
+	}
+	
+	public List<Node> printPath31(Node target) {
 		List<Node> path = new ArrayList<Node>();
 		Line2D line = new Line2D.Float();
 		boolean collision = true;
@@ -304,6 +374,8 @@ public class MyAI extends AI{
 		for (Node e : path) {
 			intPathConverter(e);
 		}
+		iHit = 0;
+		jHit = 1;
 		points = null;
 		points = new int[pathInts.size()]; 
 		//System.out.println("PathSize:" + pathInts.size());
@@ -369,7 +441,7 @@ public class MyAI extends AI{
 				if(!slow[(int) e.targetX/cellSize][(int) e.targetY/cellSize]) {
 					gewicht = 4;
 				} else if(!fast[(int) e.targetX/cellSize][(int) e.targetY/cellSize]) {
-					gewicht = 0.5f;
+					gewicht = 2f;
 				} else {
 					gewicht = 1;
 				}
@@ -491,7 +563,11 @@ public class MyAI extends AI{
 				nodeGenerator(i, j);
 			}
 		}
-        addEdges();
+		if(obstacles.length >=20) {
+			addEdgesDiag();
+        } else {
+        	addEdges();
+        }
 		AstarSearch(nodes[startPx][startPy], nodes[endPx][endPy]);	//Pfad nimmt die Startzelle des Autos sowie die Zielzelle in der sich der Checkpoint befindet. 
 
 //        List<Node> path = printPath(nodes[endPx][endPy]);
@@ -526,6 +602,12 @@ public class MyAI extends AI{
 				obsX = (float) info.getCurrentCheckpoint().getX();
 				obsY = (float) info.getCurrentCheckpoint().getY();
 			}
+			
+//			if(abstand(x, y, checkPX, checkPY) < checkPRadius) {
+//				obsX = (float) info.getCurrentCheckpoint().getX();
+//				obsY = (float) info.getCurrentCheckpoint().getY();
+//			}
+			
 			//abstand(x, y, (float) info.getCurrentCheckpoint().getX(), (float) info.getCurrentCheckpoint().getY()) <= 10
 			if (currentCPX != checkPX && currentCPY != checkPY) {
 				neuerWegpunkt = false;
@@ -605,6 +687,7 @@ public class MyAI extends AI{
 //		System.out.println("obsX: " + obsX + " obsY: " + obsY);
 		//System.out.println("The Path: " + pathInts);
 		//System.out.println("Zielwinkel: " + zielWinkel);
+		//System.out.println("Anzahl Obstacles: " + obstacles.length);
 	}
 
 	public void collisionDetect() {
@@ -1333,8 +1416,14 @@ public class MyAI extends AI{
 //		}
 //		GL11.glEnd();
 		
+		List<Node> path;
+		
 		GL11.glLineWidth(3f);
-		List<Node> path = printPath(nodes[endPx][endPy]);	//node[endPx][endPy]	//Test: [47][47]
+		if (obstacles.length >= 20) {
+			path = printPath31(nodes[(int) (checkPX / cellSize)][(int) (checkPY / cellSize)]);
+		} else {
+			path = printPath(nodes[(int) (checkPX / cellSize)][(int) (checkPY / cellSize)]);
+		}
 		GL11.glBegin(GL11.GL_LINE_LOOP);
 		GL11.glColor3d(0, 0, 1);
 		for(Node e : path) {
